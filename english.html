@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>English Words Practice</title>
+
+<style>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  min-height: 100vh;
+  background: #0f172a;
+  color: white;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 20px;
+}
+
+.card {
+  background: #1e293b;
+  border-radius: 22px;
+  padding: 25px;
+  width: 100%;
+  max-width: 500px;
+  margin: auto;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+}
+
+.title {
+  font-size: 22px;
+  margin-bottom: 20px;
+  color: #38bdf8;
+}
+
+.counter {
+  color: #94a3b8;
+  margin-bottom: 18px;
+}
+
+.word {
+  font-size: 42px;
+  font-weight: bold;
+  margin-bottom: 25px;
+}
+
+input {
+  width: 100%;
+  padding: 16px;
+  border-radius: 14px;
+  border: none;
+  outline: none;
+  font-size: 20px;
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+button {
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: 14px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.check {
+  background: #22c55e;
+  color: #052e16;
+}
+
+.next {
+  background: #38bdf8;
+  color: #020617;
+  display: none;
+}
+
+.result {
+  margin-top: 18px;
+  font-size: 20px;
+  min-height: 60px;
+}
+
+.correct {
+  color: #22c55e;
+}
+
+.wrong {
+  color: #f87171;
+}
+
+.translation {
+  color: #facc15;
+  font-size: 24px;
+  margin-top: 8px;
+}
+
+.score {
+  margin-top: 18px;
+  color: #cbd5e1;
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+  <div class="card">
+    <div class="title">English Practice A2–B1</div>
+    <div class="counter" id="counter"></div>
+
+    <div class="word" id="word"></div>
+
+    <input 
+      type="text" 
+      id="answer" 
+      placeholder="Upiši prevod na srpskom"
+      autocomplete="off"
+    >
+
+    <button class="check" onclick="checkAnswer()">Check</button>
+    <button class="next" id="nextBtn" onclick="nextWord()">Next</button>
+
+    <div class="result" id="result"></div>
+    <div class="score" id="score"></div>
+  </div>
+</div>
+
+
+  <script>
+const allWords = [
+  {en:"I",sr:"ja"},{en:"you",sr:"ti"},{en:"he",sr:"on"},{en:"she",sr:"ona"},{en:"we",sr:"mi"},
+  {en:"they",sr:"oni"},{en:"man",sr:"muškarac"},{en:"woman",sr:"žena"},{en:"person",sr:"osoba"},{en:"people",sr:"ljudi"},
+  {en:"friend",sr:"prijatelj"},{en:"driver",sr:"vozač"},{en:"manager",sr:"menadžer"},{en:"worker",sr:"radnik"},{en:"customer",sr:"klijent"},
+  {en:"company",sr:"kompanija"},{en:"team",sr:"tim"},{en:"boss",sr:"šef"},{en:"partner",sr:"partner"},{en:"day",sr:"dan"},
+  {en:"night",sr:"noć"},{en:"morning",sr:"jutro"},{en:"evening",sr:"veče"},{en:"today",sr:"danas"},{en:"yesterday",sr:"juče"},
+  {en:"tomorrow",sr:"sutra"},{en:"week",sr:"nedelja"},{en:"month",sr:"mesec"},{en:"year",sr:"godina"},{en:"time",sr:"vreme"},
+
+  {en:"hour",sr:"sat"},{en:"minute",sr:"minut"},{en:"now",sr:"sada"},{en:"later",sr:"kasnije"},{en:"early",sr:"rano"},
+  {en:"late",sr:"kasno"},{en:"always",sr:"uvek"},{en:"often",sr:"često"},{en:"sometimes",sr:"ponekad"},{en:"never",sr:"nikad"},
+  {en:"here",sr:"ovde"},{en:"there",sr:"tamo"},{en:"place",sr:"mesto"},{en:"city",sr:"grad"},{en:"street",sr:"ulica"},
+  {en:"road",sr:"put"},{en:"office",sr:"kancelarija"},{en:"home",sr:"kuća"},{en:"work",sr:"posao"},{en:"country",sr:"država"},
+  {en:"left",sr:"levo"},{en:"right",sr:"desno"},{en:"near",sr:"blizu"},{en:"far",sr:"daleko"},{en:"inside",sr:"unutra"},
+  {en:"outside",sr:"napolju"},{en:"up",sr:"gore"},{en:"down",sr:"dole"},{en:"around",sr:"okolo"},{en:"next",sr:"sledeći"},
+
+  {en:"be",sr:"biti"},{en:"have",sr:"imati"},{en:"do",sr:"raditi"},{en:"make",sr:"napraviti"},{en:"go",sr:"ići"},
+  {en:"come",sr:"doći"},{en:"take",sr:"uzeti"},{en:"get",sr:"dobiti"},{en:"give",sr:"dati"},{en:"find",sr:"pronaći"},
+  {en:"use",sr:"koristiti"},{en:"call",sr:"pozvati"},{en:"try",sr:"pokušati"},{en:"ask",sr:"pitati"},{en:"need",sr:"trebati"},
+  {en:"want",sr:"želeti"},{en:"help",sr:"pomoći"},{en:"start",sr:"početi"},{en:"stop",sr:"stati"},{en:"open",sr:"otvoriti"},
+  {en:"close",sr:"zatvoriti"},{en:"send",sr:"poslati"},{en:"receive",sr:"primiti"},{en:"check",sr:"proveriti"},{en:"fix",sr:"popraviti"},
+  {en:"move",sr:"pomeriti"},{en:"drive",sr:"voziti"},{en:"wait",sr:"čekati"},{en:"bring",sr:"doneti"},{en:"leave",sr:"otići"},
+
+  {en:"stay",sr:"ostati"},{en:"turn",sr:"skrenuti"},{en:"follow",sr:"pratiti"},{en:"change",sr:"promeniti"},{en:"keep",sr:"zadržati"},
+  {en:"hold",sr:"držati"},{en:"pay",sr:"platiti"},{en:"buy",sr:"kupiti"},{en:"sell",sr:"prodati"},{en:"save",sr:"sačuvati"},
+  {en:"delete",sr:"obrisati"},{en:"add",sr:"dodati"},{en:"remove",sr:"ukloniti"},{en:"choose",sr:"izabrati"},{en:"select",sr:"izabrati"},
+  {en:"enter",sr:"uneti"},{en:"return",sr:"vratiti se"},{en:"push",sr:"gurnuti"},{en:"pull",sr:"povući"},{en:"continue",sr:"nastaviti"},
+  {en:"finish",sr:"završiti"},{en:"think",sr:"misliti"},{en:"know",sr:"znati"},{en:"believe",sr:"verovati"},{en:"remember",sr:"zapamtiti"},
+  {en:"forget",sr:"zaboraviti"},{en:"learn",sr:"naučiti"},{en:"teach",sr:"učiti"},{en:"show",sr:"pokazati"},{en:"meet",sr:"upoznati"},
+
+  {en:"plan",sr:"planirati"},{en:"decide",sr:"odlučiti"},{en:"agree",sr:"složiti se"},{en:"win",sr:"pobediti"},{en:"lose",sr:"izgubiti"},
+  {en:"run",sr:"trčati"},{en:"walk",sr:"hodati"},{en:"sit",sr:"sedeti"},{en:"stand",sr:"stajati"},{en:"watch",sr:"gledati"},
+  {en:"listen",sr:"slušati"},{en:"hear",sr:"čuti"},{en:"understand",sr:"razumeti"},{en:"explain",sr:"objasniti"},{en:"answer",sr:"odgovoriti"},
+  {en:"question",sr:"pitanje"},{en:"message",sr:"poruka"},{en:"email",sr:"email"},{en:"information",sr:"informacija"},{en:"idea",sr:"ideja"},
+  {en:"example",sr:"primer"},{en:"reason",sr:"razlog"},{en:"because",sr:"zato što"},{en:"if",sr:"ako"},{en:"when",sr:"kada"},
+  {en:"where",sr:"gde"},{en:"why",sr:"zašto"},{en:"who",sr:"ko"},{en:"what",sr:"šta"},{en:"how",sr:"kako"},
+
+  {en:"good",sr:"dobar"},{en:"bad",sr:"loš"},{en:"big",sr:"veliki"},{en:"small",sr:"mali"},{en:"fast",sr:"brz"},
+  {en:"slow",sr:"spor"},{en:"easy",sr:"lak"},{en:"hard",sr:"težak"},{en:"new",sr:"nov"},{en:"old",sr:"star"},
+  {en:"important",sr:"važan"},{en:"possible",sr:"moguće"},{en:"different",sr:"različit"},{en:"same",sr:"isti"},{en:"correct",sr:"tačan"},
+  {en:"wrong",sr:"pogrešan"},{en:"ready",sr:"spreman"},{en:"busy",sr:"zauzet"},{en:"free",sr:"slobodan"},{en:"full",sr:"pun"},
+  {en:"empty",sr:"prazan"},{en:"strong",sr:"jak"},{en:"weak",sr:"slab"},{en:"safe",sr:"bezbedan"},{en:"dangerous",sr:"opasan"},
+  {en:"clean",sr:"čist"},{en:"dirty",sr:"prljav"},{en:"hot",sr:"vruć"},{en:"cold",sr:"hladan"},{en:"warm",sr:"topao"},
+
+  {en:"one",sr:"jedan"},{en:"two",sr:"dva"},{en:"three",sr:"tri"},{en:"four",sr:"četiri"},{en:"five",sr:"pet"},
+  {en:"six",sr:"šest"},{en:"seven",sr:"sedam"},{en:"eight",sr:"osam"},{en:"nine",sr:"devet"},{en:"ten",sr:"deset"},
+  {en:"many",sr:"mnogo"},{en:"few",sr:"malo"},{en:"more",sr:"više"},{en:"less",sr:"manje"},{en:"all",sr:"sve"},
+  {en:"first",sr:"prvi"},{en:"last",sr:"poslednji"},{en:"before",sr:"pre"},{en:"after",sr:"posle"},{en:"again",sr:"opet"},
+  {en:"still",sr:"još uvek"},{en:"already",sr:"već"},{en:"maybe",sr:"možda"},{en:"sure",sr:"sigurno"},{en:"also",sr:"takođe"},
+  {en:"only",sr:"samo"},{en:"together",sr:"zajedno"},{en:"alone",sr:"sam"},{en:"quickly",sr:"brzo"},{en:"slowly",sr:"polako"},
+
+  {en:"load",sr:"utovar"},{en:"delivery",sr:"isporuka"},{en:"pickup",sr:"preuzimanje"},{en:"route",sr:"ruta"},{en:"location",sr:"lokacija"},
+  {en:"report",sr:"izveštaj"},{en:"data",sr:"podaci"},{en:"system",sr:"sistem"},{en:"app",sr:"aplikacija"},{en:"log",sr:"zapis"},
+  {en:"hours",sr:"sati"},{en:"break",sr:"pauza"},{en:"shift",sr:"smena"},{en:"status",sr:"status"},{en:"error",sr:"greška"},
+  {en:"update",sr:"ažuriranje"},{en:"problem",sr:"problem"},{en:"solution",sr:"rešenje"},{en:"support",sr:"podrška"},{en:"service",sr:"usluga"},
+  {en:"truck",sr:"kamion"},{en:"fuel",sr:"gorivo"},{en:"police",sr:"policija"},{en:"station",sr:"stanica"},{en:"traffic",sr:"saobraćaj"},
+  {en:"document",sr:"dokument"},{en:"file",sr:"fajl"},{en:"photo",sr:"slika"},{en:"camera",sr:"kamera"},{en:"screen",sr:"ekran"},
+
+  {en:"button",sr:"dugme"},{en:"click",sr:"klik"},{en:"phone",sr:"telefon"},{en:"number",sr:"broj"},{en:"address",sr:"adresa"},
+  {en:"name",sr:"ime"},{en:"password",sr:"lozinka"},{en:"login",sr:"prijava"},{en:"logout",sr:"odjava"},{en:"account",sr:"nalog"},
+  {en:"price",sr:"cena"},{en:"cost",sr:"koštati"},{en:"cheap",sr:"jeftino"},{en:"expensive",sr:"skupo"},{en:"money",sr:"novac"},
+  {en:"job",sr:"posao"},{en:"task",sr:"zadatak"},{en:"meeting",sr:"sastanak"},{en:"note",sr:"beleška"},{en:"list",sr:"lista"},
+  {en:"page",sr:"strana"},{en:"table",sr:"tabela"},{en:"line",sr:"linija"},{en:"word",sr:"reč"},{en:"sentence",sr:"rečenica"},
+  {en:"language",sr:"jezik"},{en:"English",sr:"engleski"},{en:"Serbian",sr:"srpski"},{en:"test",sr:"test"},{en:"result",sr:"rezultat"},
+
+  {en:"success",sr:"uspeh"},{en:"mistake",sr:"greška"},{en:"answer",sr:"odgovor"},{en:"family",sr:"porodica"},{en:"father",sr:"otac"},
+  {en:"mother",sr:"majka"},{en:"son",sr:"sin"},{en:"daughter",sr:"ćerka"},{en:"brother",sr:"brat"},{en:"sister",sr:"sestra"},
+  {en:"food",sr:"hrana"},{en:"water",sr:"voda"},{en:"coffee",sr:"kafa"},{en:"bread",sr:"hleb"},{en:"meat",sr:"meso"},
+  {en:"fruit",sr:"voće"},{en:"vegetable",sr:"povrće"},{en:"breakfast",sr:"doručak"},{en:"lunch",sr:"ručak"},{en:"dinner",sr:"večera"},
+  {en:"car",sr:"auto"},{en:"bus",sr:"autobus"},{en:"train",sr:"voz"},{en:"airport",sr:"aerodrom"},{en:"hotel",sr:"hotel"},
+  {en:"hospital",sr:"bolnica"},{en:"school",sr:"škola"},{en:"shop",sr:"prodavnica"},{en:"market",sr:"pijaca"},{en:"bank",sr:"banka"},
+
+  {en:"nearby",sr:"u blizini"},{en:"behind",sr:"iza"},{en:"between",sr:"između"},{en:"across",sr:"preko puta"},{en:"corner",sr:"ugao"},
+  {en:"straight",sr:"pravo"},{en:"intersection",sr:"raskrsnica"},{en:"roundabout",sr:"kružni tok"},{en:"exit",sr:"izlaz"},{en:"entrance",sr:"ulaz"},
+
+  {en:"happy",sr:"srećan"},{en:"sad",sr:"tužan"},{en:"angry",sr:"ljut"},{en:"tired",sr:"umoran"},{en:"hungry",sr:"gladan"},
+  {en:"thirsty",sr:"žedan"},{en:"sick",sr:"bolestan"},{en:"healthy",sr:"zdrav"},{en:"better",sr:"bolje"},{en:"worse",sr:"gore"},
+  {en:"beautiful",sr:"lep"},{en:"ugly",sr:"ružan"},{en:"nice",sr:"fin"},{en:"kind",sr:"ljubazan"},{en:"serious",sr:"ozbiljan"},
+  {en:"normal",sr:"normalan"},{en:"special",sr:"poseban"},{en:"simple",sr:"jednostavan"},{en:"difficult",sr:"težak"},{en:"useful",sr:"koristan"},
+  {en:"personal",sr:"lični"},{en:"public",sr:"javni"},{en:"private",sr:"privatni"},{en:"local",sr:"lokalni"},{en:"general",sr:"opšti"},
+  {en:"main",sr:"glavni"},{en:"real",sr:"stvaran"},{en:"true",sr:"istina"},{en:"false",sr:"netačno"},{en:"final",sr:"konačan"}
+];
+
+const setSize = 30;
+let setIndex = Number(localStorage.getItem("setIndex")) || 0;
+let words = [];
+let index = 0;
+let correct = 0;
+let wrong = 0;
+let answered = false;
+
+function normalize(text) {
+  return text.toLowerCase().trim()
+    .replace(/č/g,"c").replace(/ć/g,"c").replace(/š/g,"s")
+    .replace(/đ/g,"dj").replace(/ž/g,"z");
+}
+
+function shuffle(array) {
+  return array.sort(() => Math.random() - 0.5);
+}
+
+function loadSet() {
+  const start = setIndex * setSize;
+  const end = start + setSize;
+
+  words = allWords.slice(start, end);
+
+  if (words.length === 0) {
+    setIndex = 0;
+    localStorage.setItem("setIndex", setIndex);
+    words = allWords.slice(0, setSize);
+  }
+
+  shuffle(words);
+  index = 0;
+  correct = 0;
+  wrong = 0;
+  showWord();
+}
+
+function showWord() {
+  answered = false;
+
+  document.getElementById("word").innerText = words[index].en;
+  document.getElementById("counter").innerText =
+    `Set ${setIndex + 1} | Reč ${index + 1} od ${words.length}`;
+
+  document.getElementById("answer").value = "";
+  document.getElementById("result").innerHTML = "";
+  document.getElementById("nextBtn").style.display = "none";
+
+  document.querySelector(".check").style.display = "block";
+  document.getElementById("answer").focus();
+
+  updateScore();
+}
+
+function checkAnswer() {
+  if (answered) return;
+
+  const userAnswer = normalize(document.getElementById("answer").value);
+  const correctAnswer = normalize(words[index].sr);
+  const result = document.getElementById("result");
+
+  answered = true;
+
+  if (userAnswer === correctAnswer) {
+    correct++;
+    result.innerHTML = `<div class="correct">Tačno ✅</div>`;
+  } else {
+    wrong++;
+    result.innerHTML = `
+      <div class="wrong">Netačno ❌</div>
+      <div>Tačan prevod je:</div>
+      <div class="translation">${words[index].sr}</div>
+    `;
+  }
+
+  document.querySelector(".check").style.display = "none";
+  document.getElementById("nextBtn").style.display = "block";
+  updateScore();
+}
+
+function nextWord() {
+  index++;
+
+  if (index >= words.length) {
+    document.getElementById("word").innerText = "Set završen";
+    document.getElementById("counter").innerText = `Set ${setIndex + 1}`;
+    document.getElementById("answer").style.display = "none";
+    document.querySelector(".check").style.display = "none";
+
+    document.getElementById("result").innerHTML = `
+      <div class="correct">Rezultat: ${correct} tačno / ${wrong} netačno</div>
+      <button onclick="repeatSet()" style="background:#facc15;color:#111827;">Ponovi ovaj set</button>
+      <button onclick="nextSet()" style="background:#22c55e;color:#052e16;">Sledeći set</button>
+    `;
+
+    document.getElementById("nextBtn").style.display = "none";
+    return;
+  }
+
+  showWord();
+}
+
+function repeatSet() {
+  document.getElementById("answer").style.display = "block";
+  loadSet();
+}
+
+function nextSet() {
+  setIndex++;
+  localStorage.setItem("setIndex", setIndex);
+
+  document.getElementById("answer").style.display = "block";
+  loadSet();
+}
+
+function updateScore() {
+  document.getElementById("score").innerText =
+    `Tačno: ${correct} | Netačno: ${wrong}`;
+}
+
+document.getElementById("answer").addEventListener("keydown", function(e) {
+  if (e.key === "Enter") {
+    if (!answered) {
+      checkAnswer();
+    } else {
+      nextWord();
+    }
+  }
+});
+
+loadSet();
+</script>
+
+</body>
+</html>
