@@ -4,14 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Medium City Trainer</title>
+
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
 body{background:#0f172a;color:white}
 .app{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:18px}
 .card{width:100%;max-width:560px;background:#1e293b;border-radius:22px;padding:24px;text-align:center}
 .title{font-size:24px;color:#38bdf8;font-weight:bold;margin-bottom:8px}
-.counter,.phase{color:#94a3b8;margin-bottom:10px}
-.word{font-size:30px;font-weight:bold;margin:22px 0;line-height:1.35}
+.counter,.phaseText{color:#94a3b8;margin-bottom:10px}
+.word{font-size:29px;font-weight:bold;margin:22px 0;line-height:1.35}
 input{width:100%;padding:15px;border:none;border-radius:14px;font-size:18px;text-align:center;outline:none}
 button{width:100%;padding:14px;border:none;border-radius:14px;margin-top:10px;font-size:17px;font-weight:bold;cursor:pointer}
 .check{background:#22c55e;color:#052e16}
@@ -28,360 +29,480 @@ button{width:100%;padding:14px;border:none;border-radius:14px;margin-top:10px;fo
 </head>
 
 <body>
+
 <div class="app">
 <div class="card">
+
   <div class="title">Medium City Trainer</div>
   <div class="counter" id="counter"></div>
-  <div class="phase" id="phase"></div>
+  <div class="phaseText" id="phaseText"></div>
 
   <div class="word" id="word"></div>
 
-  <input id="answer" placeholder="upiši ili izgovori odgovor">
+  <input id="answer" placeholder="upiši odgovor">
+
   <button class="voice" onclick="focusInput()">🎤 Use phone microphone</button>
-  <button class="check" onclick="check()">Check</button>
-  <button class="next" id="nextBtn" onclick="next()">Next</button>
+  <button class="check" onclick="checkAnswer()">Check</button>
+  <button class="next" id="nextBtn" onclick="nextItem()">Next</button>
 
   <div class="result" id="result"></div>
-  <div class="small" id="hint"></div>
+  <div class="small" id="hint">Klikni u polje i koristi mikrofon sa telefonske tastature.</div>
 
   <div class="nav">
     <button onclick="prevSet()">⬅ Previous set</button>
     <button onclick="nextSet()">Next set ➡</button>
   </div>
+
 </div>
 </div>
 
 <script>
-const lessons=[
-{word:"behind",sr:"iza",sentences:[
+const lessons = [
+{
+word:"behind",sr:"iza",
+sentences:[
 {en:"The bank is behind the hotel.",sr:"banka je iza hotela"},
 {en:"The parking lot is behind the building.",sr:"parking je iza zgrade"},
 {en:"The school is behind the park.",sr:"škola je iza parka"},
 {en:"The restaurant is behind the bank.",sr:"restoran je iza banke"},
-{en:"The shop is behind the hotel.",sr:"prodavnica je iza hotela"}]},
-{word:"next to",sr:"pored",sentences:[
+{en:"The shop is behind the hotel.",sr:"prodavnica je iza hotela"}
+]},
+{
+word:"next to",sr:"pored",
+sentences:[
 {en:"The cafe is next to the restaurant.",sr:"kafić je pored restorana"},
 {en:"The pharmacy is next to the hospital.",sr:"apoteka je pored bolnice"},
 {en:"The bank is next to the shop.",sr:"banka je pored prodavnice"},
 {en:"The hotel is next to the park.",sr:"hotel je pored parka"},
-{en:"The bus stop is next to the school.",sr:"stanica je pored škole"}]},
-{word:"across from",sr:"preko puta",sentences:[
+{en:"The bus stop is next to the school.",sr:"stanica je pored škole"}
+]},
+{
+word:"across from",sr:"preko puta",
+sentences:[
 {en:"The pharmacy is across from the bank.",sr:"apoteka je preko puta banke"},
 {en:"The hotel is across from the park.",sr:"hotel je preko puta parka"},
 {en:"The shop is across from the bus stop.",sr:"prodavnica je preko puta stanice"},
 {en:"The school is across from the hospital.",sr:"škola je preko puta bolnice"},
-{en:"The cafe is across from the restaurant.",sr:"kafić je preko puta restorana"}]},
-{word:"between",sr:"između",sentences:[
+{en:"The cafe is across from the restaurant.",sr:"kafić je preko puta restorana"}
+]},
+{
+word:"between",sr:"između",
+sentences:[
 {en:"The pharmacy is between the bank and the shop.",sr:"apoteka je između banke i prodavnice"},
 {en:"The hotel is between the restaurant and the museum.",sr:"hotel je između restorana i muzeja"},
 {en:"The park is between the school and the hospital.",sr:"park je između škole i bolnice"},
 {en:"The cafe is between the bank and the hotel.",sr:"kafić je između banke i hotela"},
-{en:"The shop is between the cafe and the school.",sr:"prodavnica je između kafića i škole"}]},
-{word:"in front of",sr:"ispred",sentences:[
+{en:"The shop is between the cafe and the school.",sr:"prodavnica je između kafića i škole"}
+]},
+{
+word:"in front of",sr:"ispred",
+sentences:[
 {en:"The bus stop is in front of the hotel.",sr:"stanica je ispred hotela"},
 {en:"The taxi is in front of the station.",sr:"taksi je ispred stanice"},
 {en:"The car is in front of the house.",sr:"auto je ispred kuće"},
 {en:"The shop is in front of the park.",sr:"prodavnica je ispred parka"},
-{en:"The bank is in front of the school.",sr:"banka je ispred škole"}]},
-{word:"near",sr:"blizu",sentences:[
+{en:"The bank is in front of the school.",sr:"banka je ispred škole"}
+]},
+{
+word:"near",sr:"blizu",
+sentences:[
 {en:"The restaurant is near the park.",sr:"restoran je blizu parka"},
 {en:"The hotel is near the station.",sr:"hotel je blizu stanice"},
 {en:"The shop is near the bank.",sr:"prodavnica je blizu banke"},
 {en:"The hospital is near the school.",sr:"bolnica je blizu škole"},
-{en:"The cafe is near the museum.",sr:"kafić je blizu muzeja"}]},
-{word:"far from",sr:"daleko od",sentences:[
+{en:"The cafe is near the museum.",sr:"kafić je blizu muzeja"}
+]},
+{
+word:"far from",sr:"daleko od",
+sentences:[
 {en:"The airport is far from the city center.",sr:"aerodrom je daleko od centra grada"},
 {en:"The hotel is far from the station.",sr:"hotel je daleko od stanice"},
 {en:"The park is far from here.",sr:"park je daleko odavde"},
 {en:"The hospital is far from my house.",sr:"bolnica je daleko od moje kuće"},
-{en:"The shop is far from the hotel.",sr:"prodavnica je daleko od hotela"}]},
-{word:"on the corner",sr:"na uglu",sentences:[
+{en:"The shop is far from the hotel.",sr:"prodavnica je daleko od hotela"}
+]},
+{
+word:"on the corner",sr:"na uglu",
+sentences:[
 {en:"The bank is on the corner.",sr:"banka je na uglu"},
 {en:"The cafe is on the corner of this street.",sr:"kafić je na uglu ove ulice"},
 {en:"The shop is on the corner.",sr:"prodavnica je na uglu"},
 {en:"The hotel is on the corner near the park.",sr:"hotel je na uglu blizu parka"},
-{en:"The pharmacy is on the corner.",sr:"apoteka je na uglu"}]},
-{word:"go straight",sr:"idi pravo",sentences:[
+{en:"The pharmacy is on the corner.",sr:"apoteka je na uglu"}
+]},
+{
+word:"go straight",sr:"idi pravo",
+sentences:[
 {en:"Go straight down the street.",sr:"idi pravo niz ulicu"},
 {en:"Go straight to the traffic light.",sr:"idi pravo do semafora"},
 {en:"Go straight and pass the museum.",sr:"idi pravo i prođi pored muzeja"},
 {en:"Go straight for two blocks.",sr:"idi pravo dva bloka"},
-{en:"Go straight to the park.",sr:"idi pravo do parka"}]},
-{word:"turn right",sr:"skreni desno",sentences:[
+{en:"Go straight to the park.",sr:"idi pravo do parka"}
+]},
+{
+word:"turn right",sr:"skreni desno",
+sentences:[
 {en:"Turn right at the hospital.",sr:"skreni desno kod bolnice"},
 {en:"Turn right at the first intersection.",sr:"skreni desno na prvoj raskrsnici"},
 {en:"Turn right after the gas station.",sr:"skreni desno posle pumpe"},
 {en:"Turn right before the park.",sr:"skreni desno pre parka"},
-{en:"Turn right at the bank.",sr:"skreni desno kod banke"}]},
-{word:"turn left",sr:"skreni levo",sentences:[
+{en:"Turn right at the bank.",sr:"skreni desno kod banke"}
+]},
+{
+word:"turn left",sr:"skreni levo",
+sentences:[
 {en:"Turn left at the bank.",sr:"skreni levo kod banke"},
 {en:"Turn left before the school.",sr:"skreni levo pre škole"},
 {en:"Turn left after the park.",sr:"skreni levo posle parka"},
 {en:"Turn left at the hotel.",sr:"skreni levo kod hotela"},
-{en:"Turn left at the pharmacy.",sr:"skreni levo kod apoteke"}]},
-{word:"cross the street",sr:"pređi ulicu",sentences:[
+{en:"Turn left at the pharmacy.",sr:"skreni levo kod apoteke"}
+]},
+{
+word:"cross the street",sr:"pređi ulicu",
+sentences:[
 {en:"Cross the street at the traffic light.",sr:"pređi ulicu kod semafora"},
 {en:"Cross the street carefully.",sr:"pažljivo pređi ulicu"},
 {en:"Cross the street near the bank.",sr:"pređi ulicu blizu banke"},
 {en:"Cross the street and turn left.",sr:"pređi ulicu i skreni levo"},
-{en:"Cross the street in front of the hotel.",sr:"pređi ulicu ispred hotela"}]},
-{word:"traffic light",sr:"semafor",sentences:[
+{en:"Cross the street in front of the hotel.",sr:"pređi ulicu ispred hotela"}
+]},
+{
+word:"traffic light",sr:"semafor",
+sentences:[
 {en:"Stop at the traffic light.",sr:"stani kod semafora"},
 {en:"Turn right at the traffic light.",sr:"skreni desno kod semafora"},
 {en:"Go straight to the traffic light.",sr:"idi pravo do semafora"},
 {en:"The traffic light is near the bank.",sr:"semafor je blizu banke"},
-{en:"Cross the street at the traffic light.",sr:"pređi ulicu kod semafora"}]},
-{word:"intersection",sr:"raskrsnica",sentences:[
+{en:"Cross the street at the traffic light.",sr:"pređi ulicu kod semafora"}
+]},
+{
+word:"intersection",sr:"raskrsnica",
+sentences:[
 {en:"Turn left at the intersection.",sr:"skreni levo na raskrsnici"},
 {en:"Go straight to the intersection.",sr:"idi pravo do raskrsnice"},
 {en:"The bank is near the intersection.",sr:"banka je blizu raskrsnice"},
 {en:"Turn right at the first intersection.",sr:"skreni desno na prvoj raskrsnici"},
-{en:"Cross the street at the intersection.",sr:"pređi ulicu na raskrsnici"}]},
-{word:"roundabout",sr:"kružni tok",sentences:[
+{en:"Cross the street at the intersection.",sr:"pređi ulicu na raskrsnici"}
+]},
+{
+word:"roundabout",sr:"kružni tok",
+sentences:[
 {en:"Take the first exit at the roundabout.",sr:"izađi na prvi izlaz u kružnom toku"},
 {en:"Take the second exit at the roundabout.",sr:"izađi na drugi izlaz u kružnom toku"},
 {en:"Go straight through the roundabout.",sr:"idi pravo kroz kružni tok"},
 {en:"Turn right after the roundabout.",sr:"skreni desno posle kružnog toka"},
-{en:"The station is near the roundabout.",sr:"stanica je blizu kružnog toka"}]},
-{word:"go past",sr:"prođi pored",sentences:[
+{en:"The station is near the roundabout.",sr:"stanica je blizu kružnog toka"}
+]},
+{
+word:"go past",sr:"prođi pored",
+sentences:[
 {en:"Go past the museum.",sr:"prođi pored muzeja"},
 {en:"Go past the hospital and turn right.",sr:"prođi pored bolnice i skreni desno"},
 {en:"Go past the bank.",sr:"prođi pored banke"},
 {en:"Go past the park.",sr:"prođi pored parka"},
-{en:"Go past the school and continue straight.",sr:"prođi pored škole i nastavi pravo"}]},
-{word:"continue straight",sr:"nastavi pravo",sentences:[
+{en:"Go past the school and continue straight.",sr:"prođi pored škole i nastavi pravo"}
+]},
+{
+word:"continue straight",sr:"nastavi pravo",
+sentences:[
 {en:"Continue straight to the park.",sr:"nastavi pravo do parka"},
 {en:"Continue straight after the traffic light.",sr:"nastavi pravo posle semafora"},
 {en:"Continue straight for two blocks.",sr:"nastavi pravo dva bloka"},
 {en:"Continue straight and pass the hotel.",sr:"nastavi pravo i prođi pored hotela"},
-{en:"Continue straight to the city center.",sr:"nastavi pravo do centra grada"}]},
-{word:"bus stop",sr:"autobuska stanica",sentences:[
+{en:"Continue straight to the city center.",sr:"nastavi pravo do centra grada"}
+]},
+{
+word:"bus stop",sr:"autobuska stanica",
+sentences:[
 {en:"The bus stop is next to the school.",sr:"autobuska stanica je pored škole"},
 {en:"The bus stop is in front of the hotel.",sr:"autobuska stanica je ispred hotela"},
 {en:"Turn right at the bus stop.",sr:"skreni desno kod autobuske stanice"},
 {en:"The bus stop is across from the bank.",sr:"autobuska stanica je preko puta banke"},
-{en:"Go straight to the bus stop.",sr:"idi pravo do autobuske stanice"}]},
-{word:"gas station",sr:"benzinska pumpa",sentences:[
+{en:"Go straight to the bus stop.",sr:"idi pravo do autobuske stanice"}
+]},
+{
+word:"gas station",sr:"benzinska pumpa",
+sentences:[
 {en:"The gas station is on the right.",sr:"benzinska pumpa je desno"},
 {en:"Turn left after the gas station.",sr:"skreni levo posle pumpe"},
 {en:"The gas station is near the roundabout.",sr:"benzinska pumpa je blizu kružnog toka"},
 {en:"Go past the gas station.",sr:"prođi pored pumpe"},
-{en:"The hotel is across from the gas station.",sr:"hotel je preko puta pumpe"}]},
-{word:"parking lot",sr:"parking",sentences:[
+{en:"The hotel is across from the gas station.",sr:"hotel je preko puta pumpe"}
+]},
+{
+word:"parking lot",sr:"parking",
+sentences:[
 {en:"The parking lot is behind the building.",sr:"parking je iza zgrade"},
 {en:"The parking lot is next to the hotel.",sr:"parking je pored hotela"},
 {en:"The parking lot is in front of the shop.",sr:"parking je ispred prodavnice"},
 {en:"Turn right into the parking lot.",sr:"skreni desno na parking"},
-{en:"The parking lot is near the restaurant.",sr:"parking je blizu restorana"}]},
-{word:"city center",sr:"centar grada",sentences:[
+{en:"The parking lot is near the restaurant.",sr:"parking je blizu restorana"}
+]},
+{
+word:"city center",sr:"centar grada",
+sentences:[
 {en:"Go straight to the city center.",sr:"idi pravo do centra grada"},
 {en:"The hotel is near the city center.",sr:"hotel je blizu centra grada"},
 {en:"The station is far from the city center.",sr:"stanica je daleko od centra grada"},
 {en:"Turn left toward the city center.",sr:"skreni levo ka centru grada"},
-{en:"The museum is in the city center.",sr:"muzej je u centru grada"}]},
-{word:"main street",sr:"glavna ulica",sentences:[
+{en:"The museum is in the city center.",sr:"muzej je u centru grada"}
+]},
+{
+word:"main street",sr:"glavna ulica",
+sentences:[
 {en:"Go down the main street.",sr:"idi niz glavnu ulicu"},
 {en:"The bank is on the main street.",sr:"banka je u glavnoj ulici"},
 {en:"Turn right onto the main street.",sr:"skreni desno u glavnu ulicu"},
 {en:"The hotel is near the main street.",sr:"hotel je blizu glavne ulice"},
-{en:"Cross the main street.",sr:"pređi glavnu ulicu"}]},
-{word:"side street",sr:"sporedna ulica",sentences:[
+{en:"Cross the main street.",sr:"pređi glavnu ulicu"}
+]},
+{
+word:"side street",sr:"sporedna ulica",
+sentences:[
 {en:"Turn left into the side street.",sr:"skreni levo u sporednu ulicu"},
 {en:"The cafe is in a side street.",sr:"kafić je u sporednoj ulici"},
 {en:"Go down the side street.",sr:"idi niz sporednu ulicu"},
 {en:"The shop is on the side street.",sr:"prodavnica je u sporednoj ulici"},
-{en:"The parking lot is near the side street.",sr:"parking je blizu sporedne ulice"}]},
-{word:"at the end of",sr:"na kraju",sentences:[
+{en:"The parking lot is near the side street.",sr:"parking je blizu sporedne ulice"}
+]},
+{
+word:"at the end of",sr:"na kraju",
+sentences:[
 {en:"The bank is at the end of the street.",sr:"banka je na kraju ulice"},
 {en:"The park is at the end of this road.",sr:"park je na kraju ovog puta"},
 {en:"Turn right at the end of the street.",sr:"skreni desno na kraju ulice"},
 {en:"The hotel is at the end of the block.",sr:"hotel je na kraju bloka"},
-{en:"Stop at the end of the road.",sr:"stani na kraju puta"}]},
-{word:"at the beginning of",sr:"na početku",sentences:[
+{en:"Stop at the end of the road.",sr:"stani na kraju puta"}
+]},
+{
+word:"at the beginning of",sr:"na početku",
+sentences:[
 {en:"The shop is at the beginning of the street.",sr:"prodavnica je na početku ulice"},
 {en:"The hotel is at the beginning of the road.",sr:"hotel je na početku puta"},
 {en:"Turn left at the beginning of the street.",sr:"skreni levo na početku ulice"},
 {en:"The bus stop is at the beginning of the block.",sr:"autobuska stanica je na početku bloka"},
-{en:"The cafe is at the beginning of the street.",sr:"kafić je na početku ulice"}]},
-{word:"take the first exit",sr:"izađi na prvi izlaz",sentences:[
+{en:"The cafe is at the beginning of the street.",sr:"kafić je na početku ulice"}
+]},
+{
+word:"take the first exit",sr:"izađi na prvi izlaz",
+sentences:[
 {en:"Take the first exit at the roundabout.",sr:"izađi na prvi izlaz u kružnom toku"},
 {en:"Take the first exit and go straight.",sr:"izađi na prvi izlaz i idi pravo"},
 {en:"Take the first exit toward the city center.",sr:"izađi na prvi izlaz ka centru grada"},
 {en:"Take the first exit after the gas station.",sr:"izađi na prvi izlaz posle pumpe"},
-{en:"Take the first exit and turn right.",sr:"izađi na prvi izlaz i skreni desno"}]},
-{word:"take the second exit",sr:"izađi na drugi izlaz",sentences:[
+{en:"Take the first exit and turn right.",sr:"izađi na prvi izlaz i skreni desno"}
+]},
+{
+word:"take the second exit",sr:"izađi na drugi izlaz",
+sentences:[
 {en:"Take the second exit at the roundabout.",sr:"izađi na drugi izlaz u kružnom toku"},
 {en:"Take the second exit and continue straight.",sr:"izađi na drugi izlaz i nastavi pravo"},
 {en:"Take the second exit toward the hospital.",sr:"izađi na drugi izlaz ka bolnici"},
 {en:"Take the second exit after the bridge.",sr:"izađi na drugi izlaz posle mosta"},
-{en:"Take the second exit and pass the park.",sr:"izađi na drugi izlaz i prođi pored parka"}]},
-{word:"walk along",sr:"hodaj duž",sentences:[
+{en:"Take the second exit and pass the park.",sr:"izađi na drugi izlaz i prođi pored parka"}
+]},
+{
+word:"walk along",sr:"hodaj duž",
+sentences:[
 {en:"Walk along the river.",sr:"hodaj duž reke"},
 {en:"Walk along the main street.",sr:"hodaj duž glavne ulice"},
 {en:"Walk along the park.",sr:"hodaj duž parka"},
 {en:"Walk along this road.",sr:"hodaj duž ovog puta"},
-{en:"Walk along the building and turn left.",sr:"hodaj duž zgrade i skreni levo"}]},
-{word:"opposite",sr:"nasuprot",sentences:[
+{en:"Walk along the building and turn left.",sr:"hodaj duž zgrade i skreni levo"}
+]},
+{
+word:"opposite",sr:"nasuprot",
+sentences:[
 {en:"The hotel is opposite the bank.",sr:"hotel je nasuprot banke"},
 {en:"The shop is opposite the school.",sr:"prodavnica je nasuprot škole"},
 {en:"The cafe is opposite the park.",sr:"kafić je nasuprot parka"},
 {en:"The hospital is opposite the station.",sr:"bolnica je nasuprot stanice"},
-{en:"The museum is opposite the restaurant.",sr:"muzej je nasuprot restorana"}]},
-{word:"nearby",sr:"u blizini",sentences:[
+{en:"The museum is opposite the restaurant.",sr:"muzej je nasuprot restorana"}
+]},
+{
+word:"nearby",sr:"u blizini",
+sentences:[
 {en:"There is a shop nearby.",sr:"prodavnica je u blizini"},
 {en:"There is a bus stop nearby.",sr:"autobuska stanica je u blizini"},
 {en:"The hotel is nearby.",sr:"hotel je u blizini"},
 {en:"The pharmacy is nearby.",sr:"apoteka je u blizini"},
-{en:"There is a parking lot nearby.",sr:"parking je u blizini"}]}
+{en:"There is a parking lot nearby.",sr:"parking je u blizini"}
+]}
 ];
 
-const setSize=10;
-let setIndex=Number(localStorage.getItem("mediumCitySet"))||0;
-let phase=1,index=0,set=[],sentenceSet=[],answered=false;
+const setSize = 10;
 
-function normalize(t){
-return t.toLowerCase().trim()
-.replace(/[.!?,]/g,"")
-.replace(/č/g,"c").replace(/ć/g,"c").replace(/š/g,"s")
-.replace(/đ/g,"dj").replace(/ž/g,"z")
-.replace(/\s+/g," ");
+let setIndex = Number(localStorage.getItem("mediumCitySet")) || 0;
+let currentPhase = 1;
+let currentIndex = 0;
+let currentSet = [];
+let sentenceSet = [];
+let answered = false;
+let direction = "en-sr";
+
+function normalize(text){
+  return text.toLowerCase().trim()
+    .replace(/[.!?,]/g,"")
+    .replace(/č/g,"c").replace(/ć/g,"c").replace(/š/g,"s")
+    .replace(/đ/g,"dj").replace(/ž/g,"z")
+    .replace(/\s+/g," ");
 }
 
 function loadSet(){
-let start=setIndex*setSize;
-set=lessons.slice(start,start+setSize);
-if(set.length===0){setIndex=0;localStorage.setItem("mediumCitySet",0);loadSet();return;}
-sentenceSet=set.map(item=>item.sentences[Math.floor(Math.random()*item.sentences.length)]);
-phase=1;index=0;show();
+  let start = setIndex * setSize;
+  currentSet = lessons.slice(start, start + setSize);
+
+  if(currentSet.length === 0){
+    setIndex = 0;
+    localStorage.setItem("mediumCitySet", 0);
+    loadSet();
+    return;
+  }
+
+  sentenceSet = currentSet.map(item => {
+    return item.sentences[Math.floor(Math.random() * item.sentences.length)];
+  });
+
+  currentPhase = 1;
+  currentIndex = 0;
+  showItem();
 }
 
-let direction = "en-sr";
-
-function show(){
-  answered=false;
-  answer.style.display="block";
-  document.querySelector(".check").style.display="block";
-  document.querySelector(".voice").style.display="block";
-  answer.value="";
-  result.innerHTML="";
-  hint.innerHTML="";
-  nextBtn.style.display="none";
-
+function showItem(){
+  answered = false;
   direction = Math.random() < 0.5 ? "en-sr" : "sr-en";
 
-  if(phase===1){
-    phaseEl("Faza 1: pojmovi MIX ENG ↔ SRB");
-    counter.innerText=`Set ${setIndex+1} | Pojam ${index+1}/${set.length}`;
+  document.getElementById("answer").style.display = "block";
+  document.querySelector(".check").style.display = "block";
+  document.querySelector(".voice").style.display = "block";
 
-    if(direction==="en-sr"){
-      word.innerText=set[index].word;
-      answer.placeholder="upiši prevod na srpskom";
-    }else{
-      word.innerText=set[index].sr;
-      answer.placeholder="upiši prevod na engleskom";
-    }
-  }else{
-    phaseEl("Faza 2: rečenice MIX ENG ↔ SRB");
-    counter.innerText=`Set ${setIndex+1} | Rečenica ${index+1}/${sentenceSet.length}`;
+  document.getElementById("answer").value = "";
+  document.getElementById("result").innerHTML = "";
+  document.getElementById("nextBtn").style.display = "none";
 
-    if(direction==="en-sr"){
-      word.innerText=sentenceSet[index].en;
-      answer.placeholder="upiši prevod na srpskom";
-    }else{
-      word.innerText=sentenceSet[index].sr;
-      answer.placeholder="upiši prevod na engleskom";
+  if(currentPhase === 1){
+    document.getElementById("phaseText").innerText = "Faza 1: pojmovi MIX ENG ↔ SRB";
+    document.getElementById("counter").innerText =
+      `Set ${setIndex + 1} | Pojam ${currentIndex + 1}/${currentSet.length}`;
+
+    if(direction === "en-sr"){
+      document.getElementById("word").innerText = currentSet[currentIndex].word;
+      document.getElementById("answer").placeholder = "upiši prevod na srpskom";
+    } else {
+      document.getElementById("word").innerText = currentSet[currentIndex].sr;
+      document.getElementById("answer").placeholder = "upiši prevod na engleskom";
     }
   }
 
-  answer.focus();
-}
+  if(currentPhase === 2){
+    document.getElementById("phaseText").innerText = "Faza 2: rečenice MIX ENG ↔ SRB";
+    document.getElementById("counter").innerText =
+      `Set ${setIndex + 1} | Rečenica ${currentIndex + 1}/${sentenceSet.length}`;
 
-function check(){
-  if(answered)return;
-  answered=true;
-
-  let user=normalize(answer.value);
-  let correct="";
-
-  if(phase===1){
-    correct = direction==="en-sr" ? set[index].sr : set[index].word;
-  }else{
-    correct = direction==="en-sr" ? sentenceSet[index].sr : sentenceSet[index].en;
+    if(direction === "en-sr"){
+      document.getElementById("word").innerText = sentenceSet[currentIndex].en;
+      document.getElementById("answer").placeholder = "upiši prevod na srpskom";
+    } else {
+      document.getElementById("word").innerText = sentenceSet[currentIndex].sr;
+      document.getElementById("answer").placeholder = "upiši prevod na engleskom";
+    }
   }
 
-  if(user===normalize(correct)){
-    result.innerHTML=`<div class="correct">Tačno ✅</div>`;
-  }else{
-    result.innerHTML=`
-      <div class="wrong">Netačno ❌</div>
-      <div>Tačno je:</div>
-      <div class="answer">${correct}</div>
-    `;
+  document.getElementById("answer").focus();
+}
+
+function checkAnswer(){
+  if(answered) return;
+
+  answered = true;
+
+  let user = normalize(document.getElementById("answer").value);
+  let correct = "";
+
+  if(currentPhase === 1){
+    correct = direction === "en-sr"
+      ? currentSet[currentIndex].sr
+      : currentSet[currentIndex].word;
+  } else {
+    correct = direction === "en-sr"
+      ? sentenceSet[currentIndex].sr
+      : sentenceSet[currentIndex].en;
   }
 
-  nextBtn.style.display="block";
+  if(user === normalize(correct)){
+    document.getElementById("result").innerHTML =
+      `<div class="correct">Tačno ✅</div>`;
+  } else {
+    document.getElementById("result").innerHTML =
+      `<div class="wrong">Netačno ❌</div>
+       <div>Tačno je:</div>
+       <div class="answer">${correct}</div>`;
+  }
+
+  document.getElementById("nextBtn").style.display = "block";
 }
 
-function next(){
-index++;
-if(phase===1 && index>=set.length){phase=2;index=0;}
-else if(phase===2 && index>=sentenceSet.length){finish();return;}
-show();
+function nextItem(){
+  currentIndex++;
+
+  if(currentPhase === 1 && currentIndex >= currentSet.length){
+    currentPhase = 2;
+    currentIndex = 0;
+  } else if(currentPhase === 2 && currentIndex >= sentenceSet.length){
+    finishSet();
+    return;
+  }
+
+  showItem();
 }
 
-function finish(){
-word.innerText="Set završen";
-counter.innerText=`Set ${setIndex+1}`;
-phase.innerText="";
-answer.style.display="none";
-document.querySelector(".check").style.display="none";
-document.querySelector(".voice").style.display="none";
-nextBtn.style.display="none";
-result.innerHTML=`<button onclick="loadSet()" style="background:#facc15;color:#111827">Ponovi set</button>
-<button onclick="nextSet()" style="background:#22c55e;color:#052e16">Sledeći set</button>`;
+function finishSet(){
+  document.getElementById("word").innerText = "Set završen";
+  document.getElementById("counter").innerText = `Set ${setIndex + 1}`;
+  document.getElementById("phaseText").innerText = "";
+  document.getElementById("answer").style.display = "none";
+  document.querySelector(".check").style.display = "none";
+  document.querySelector(".voice").style.display = "none";
+  document.getElementById("nextBtn").style.display = "none";
+
+  document.getElementById("result").innerHTML =
+    `<button onclick="loadSet()" style="background:#facc15;color:#111827">Ponovi set</button>
+     <button onclick="nextSet()" style="background:#22c55e;color:#052e16">Sledeći set</button>`;
 }
 
 function nextSet(){
-setIndex++;
-localStorage.setItem("mediumCitySet",setIndex);
-loadSet();
+  setIndex++;
+  localStorage.setItem("mediumCitySet", setIndex);
+  loadSet();
 }
 
 function prevSet(){
-if(setIndex>0)setIndex--;
-localStorage.setItem("mediumCitySet",setIndex);
-loadSet();
+  if(setIndex > 0){
+    setIndex--;
+  }
+  localStorage.setItem("mediumCitySet", setIndex);
+  loadSet();
 }
+
 function focusInput(){
-
-  document.getElementById("answer").focus();
-
-}
-function startVoice(){
-const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
-if(!SpeechRecognition){alert("Voice ne radi u ovom browseru. Probaj Chrome.");return;}
-const rec=new SpeechRecognition();
-rec.lang = direction === "sr-en" ? "en-US" : "sr-RS";
-rec.interimResults=false;
-rec.maxAlternatives=1;
-hint.innerText="Slušam...";
-rec.start();
-rec.onresult=e=>{
-answer.value=e.results[0][0].transcript;
-hint.innerText="";
-check();
-};
-rec.onerror=()=>{hint.innerText="Nisam dobro čuo. Probaj ponovo.";};
+  const input = document.getElementById("answer");
+  input.focus();
+  document.getElementById("hint").innerText =
+    "Sada pritisni mikrofon na tastaturi telefona.";
 }
 
-answer.addEventListener("keydown",e=>{
-if(e.key==="Enter"){
-if(!answered)check();
-else next();
-}
+document.getElementById("answer").addEventListener("keydown", function(e){
+  if(e.key === "Enter"){
+    if(!answered){
+      checkAnswer();
+    } else {
+      nextItem();
+    }
+  }
 });
 
 loadSet();
 </script>
+
 </body>
 </html>
