@@ -37,7 +37,7 @@ button{width:100%;padding:14px;border:none;border-radius:14px;margin-top:10px;fo
   <div class="word" id="word"></div>
 
   <input id="answer" placeholder="upiši ili izgovori odgovor">
-  <button class="voice" onclick="startVoice()">🎤 Speak</button>
+  <button class="voice" onclick="focusInput()">🎤 Use phone microphone</button>
   <button class="check" onclick="check()">Check</button>
   <button class="next" id="nextBtn" onclick="next()">Next</button>
 
@@ -255,43 +255,71 @@ sentenceSet=set.map(item=>item.sentences[Math.floor(Math.random()*item.sentences
 phase=1;index=0;show();
 }
 
+let direction = "en-sr";
+
 function show(){
-answered=false;
-answer.style.display="block";
-document.querySelector(".check").style.display="block";
-document.querySelector(".voice").style.display="block";
-answer.value="";
-result.innerHTML="";
-hint.innerHTML="";
-nextBtn.style.display="none";
+  answered=false;
+  answer.style.display="block";
+  document.querySelector(".check").style.display="block";
+  document.querySelector(".voice").style.display="block";
+  answer.value="";
+  result.innerHTML="";
+  hint.innerHTML="";
+  nextBtn.style.display="none";
 
-if(phase===1){
-phaseEl("Faza 1: prevedi pojam ENG → SRB");
-counter.innerText=`Set ${setIndex+1} | Pojam ${index+1}/${set.length}`;
-word.innerText=set[index].word;
-}else{
-phaseEl("Faza 2: prevedi rečenicu ENG → SRB");
-counter.innerText=`Set ${setIndex+1} | Rečenica ${index+1}/${sentenceSet.length}`;
-word.innerText=sentenceSet[index].en;
-}
-answer.focus();
-}
+  direction = Math.random() < 0.5 ? "en-sr" : "sr-en";
 
-function phaseEl(text){document.getElementById("phase").innerText=text;}
+  if(phase===1){
+    phaseEl("Faza 1: pojmovi MIX ENG ↔ SRB");
+    counter.innerText=`Set ${setIndex+1} | Pojam ${index+1}/${set.length}`;
+
+    if(direction==="en-sr"){
+      word.innerText=set[index].word;
+      answer.placeholder="upiši prevod na srpskom";
+    }else{
+      word.innerText=set[index].sr;
+      answer.placeholder="upiši prevod na engleskom";
+    }
+  }else{
+    phaseEl("Faza 2: rečenice MIX ENG ↔ SRB");
+    counter.innerText=`Set ${setIndex+1} | Rečenica ${index+1}/${sentenceSet.length}`;
+
+    if(direction==="en-sr"){
+      word.innerText=sentenceSet[index].en;
+      answer.placeholder="upiši prevod na srpskom";
+    }else{
+      word.innerText=sentenceSet[index].sr;
+      answer.placeholder="upiši prevod na engleskom";
+    }
+  }
+
+  answer.focus();
+}
 
 function check(){
-if(answered)return;
-answered=true;
-let user=normalize(answer.value);
-let correct=phase===1?set[index].sr:sentenceSet[index].sr;
+  if(answered)return;
+  answered=true;
 
-if(user===normalize(correct)){
-result.innerHTML=`<div class="correct">Tačno ✅</div>`;
-}else{
-result.innerHTML=`<div class="wrong">Netačno ❌</div><div>Tačno je:</div><div class="answer">${correct}</div>`;
-}
+  let user=normalize(answer.value);
+  let correct="";
 
-nextBtn.style.display="block";
+  if(phase===1){
+    correct = direction==="en-sr" ? set[index].sr : set[index].word;
+  }else{
+    correct = direction==="en-sr" ? sentenceSet[index].sr : sentenceSet[index].en;
+  }
+
+  if(user===normalize(correct)){
+    result.innerHTML=`<div class="correct">Tačno ✅</div>`;
+  }else{
+    result.innerHTML=`
+      <div class="wrong">Netačno ❌</div>
+      <div>Tačno je:</div>
+      <div class="answer">${correct}</div>
+    `;
+  }
+
+  nextBtn.style.display="block";
 }
 
 function next(){
@@ -324,12 +352,16 @@ if(setIndex>0)setIndex--;
 localStorage.setItem("mediumCitySet",setIndex);
 loadSet();
 }
+function focusInput(){
 
+  document.getElementById("answer").focus();
+
+}
 function startVoice(){
 const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
 if(!SpeechRecognition){alert("Voice ne radi u ovom browseru. Probaj Chrome.");return;}
 const rec=new SpeechRecognition();
-rec.lang="sr-RS";
+rec.lang = direction === "sr-en" ? "en-US" : "sr-RS";
 rec.interimResults=false;
 rec.maxAlternatives=1;
 hint.innerText="Slušam...";
