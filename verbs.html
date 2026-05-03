@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Irregular Verbs Practice</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
+body{min-height:100vh;background:#0f172a;color:white}
+.app{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:18px}
+.card{width:100%;max-width:520px;background:#1e293b;border-radius:24px;padding:24px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.45)}
+.title{font-size:22px;color:#38bdf8;font-weight:bold;margin-bottom:12px}
+.counter{color:#94a3b8;margin-bottom:18px}
+.verb{font-size:46px;font-weight:bold;margin:20px 0;color:#fff}
+.help{color:#cbd5e1;margin-bottom:12px}
+input{width:100%;padding:16px;border:none;border-radius:14px;font-size:18px;text-align:center;outline:none;margin-bottom:12px}
+button{width:100%;padding:16px;border:none;border-radius:14px;font-size:18px;font-weight:bold;margin-top:10px;cursor:pointer}
+.check{background:#22c55e;color:#052e16}
+.next{background:#38bdf8;color:#020617;display:none}
+.result{margin-top:18px;font-size:19px;min-height:70px}
+.correct{color:#22c55e;font-weight:bold}
+.wrong{color:#f87171;font-weight:bold}
+.answer{color:#facc15;font-size:22px;margin-top:8px}
+.score{margin-top:18px;color:#cbd5e1}
+.yellow{background:#facc15!important;color:#111827!important}
+.green{background:#22c55e!important;color:#052e16!important}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+  <div class="card">
+    <div class="title">Irregular Verbs Practice</div>
+    <div class="counter" id="counter"></div>
+
+    <div class="verb" id="verb"></div>
+    <div class="help">Upiši: past simple + past participle + prevod</div>
+
+    <input id="answer" placeholder="npr. went gone ići" autocomplete="off">
+
+    <button class="check" onclick="checkAnswer()">Check</button>
+    <button class="next" id="nextBtn" onclick="nextWord()">Next</button>
+
+    <div class="result" id="result"></div>
+    <div class="score" id="score"></div>
+  </div>
+</div>
+
+<script>
+const allVerbs = [
+  {base:"be", past:"was/were", pp:"been", sr:"biti"},
+  {base:"become", past:"became", pp:"become", sr:"postati"},
+  {base:"begin", past:"began", pp:"begun", sr:"početi"},
+  {base:"break", past:"broke", pp:"broken", sr:"slomiti"},
+  {base:"bring", past:"brought", pp:"brought", sr:"doneti"},
+  {base:"build", past:"built", pp:"built", sr:"izgraditi"},
+  {base:"buy", past:"bought", pp:"bought", sr:"kupiti"},
+  {base:"catch", past:"caught", pp:"caught", sr:"uhvatiti"},
+  {base:"choose", past:"chose", pp:"chosen", sr:"izabrati"},
+  {base:"come", past:"came", pp:"come", sr:"doći"},
+  {base:"cost", past:"cost", pp:"cost", sr:"koštati"},
+  {base:"cut", past:"cut", pp:"cut", sr:"seći"},
+  {base:"do", past:"did", pp:"done", sr:"raditi"},
+  {base:"draw", past:"drew", pp:"drawn", sr:"crtati"},
+  {base:"drink", past:"drank", pp:"drunk", sr:"piti"},
+  {base:"drive", past:"drove", pp:"driven", sr:"voziti"},
+  {base:"eat", past:"ate", pp:"eaten", sr:"jesti"},
+  {base:"fall", past:"fell", pp:"fallen", sr:"pasti"},
+  {base:"feel", past:"felt", pp:"felt", sr:"osećati"},
+  {base:"find", past:"found", pp:"found", sr:"pronaći"},
+  {base:"fly", past:"flew", pp:"flown", sr:"leteti"},
+  {base:"forget", past:"forgot", pp:"forgotten", sr:"zaboraviti"},
+  {base:"get", past:"got", pp:"got/gotten", sr:"dobiti"},
+  {base:"give", past:"gave", pp:"given", sr:"dati"},
+  {base:"go", past:"went", pp:"gone", sr:"ići"},
+  {base:"grow", past:"grew", pp:"grown", sr:"rasti"},
+  {base:"have", past:"had", pp:"had", sr:"imati"},
+  {base:"hear", past:"heard", pp:"heard", sr:"čuti"},
+  {base:"hold", past:"held", pp:"held", sr:"držati"},
+  {base:"keep", past:"kept", pp:"kept", sr:"čuvati"},
+  {base:"know", past:"knew", pp:"known", sr:"znati"},
+  {base:"leave", past:"left", pp:"left", sr:"otići"},
+  {base:"lend", past:"lent", pp:"lent", sr:"pozajmiti"},
+  {base:"let", past:"let", pp:"let", sr:"dozvoliti"},
+  {base:"lose", past:"lost", pp:"lost", sr:"izgubiti"},
+  {base:"make", past:"made", pp:"made", sr:"napraviti"},
+  {base:"mean", past:"meant", pp:"meant", sr:"značiti"},
+  {base:"meet", past:"met", pp:"met", sr:"upoznati"},
+  {base:"pay", past:"paid", pp:"paid", sr:"platiti"},
+  {base:"put", past:"put", pp:"put", sr:"staviti"},
+  {base:"read", past:"read", pp:"read", sr:"čitati"},
+  {base:"ride", past:"rode", pp:"ridden", sr:"jahati"},
+  {base:"ring", past:"rang", pp:"rung", sr:"zvoniti"},
+  {base:"run", past:"ran", pp:"run", sr:"trčati"},
+  {base:"say", past:"said", pp:"said", sr:"reći"},
+  {base:"see", past:"saw", pp:"seen", sr:"videti"},
+  {base:"sell", past:"sold", pp:"sold", sr:"prodati"},
+  {base:"send", past:"sent", pp:"sent", sr:"poslati"},
+  {base:"set", past:"set", pp:"set", sr:"postaviti"},
+  {base:"show", past:"showed", pp:"shown", sr:"pokazati"},
+  {base:"sit", past:"sat", pp:"sat", sr:"sedeti"},
+  {base:"sleep", past:"slept", pp:"slept", sr:"spavati"},
+  {base:"speak", past:"spoke", pp:"spoken", sr:"govoriti"},
+  {base:"spend", past:"spent", pp:"spent", sr:"potrošiti"},
+  {base:"stand", past:"stood", pp:"stood", sr:"stajati"},
+  {base:"swim", past:"swam", pp:"swum", sr:"plivati"},
+  {base:"take", past:"took", pp:"taken", sr:"uzeti"},
+  {base:"teach", past:"taught", pp:"taught", sr:"učiti nekoga"},
+  {base:"tell", past:"told", pp:"told", sr:"reći nekome"},
+  {base:"think", past:"thought", pp:"thought", sr:"misliti"},
+  {base:"throw", past:"threw", pp:"thrown", sr:"baciti"},
+  {base:"understand", past:"understood", pp:"understood", sr:"razumeti"},
+  {base:"wake", past:"woke", pp:"woken", sr:"probuditi"},
+  {base:"wear", past:"wore", pp:"worn", sr:"nositi"},
+  {base:"win", past:"won", pp:"won", sr:"pobediti"},
+  {base:"write", past:"wrote", pp:"written", sr:"pisati"}
+];
+
+const setSize = 15;
+let setIndex = Number(localStorage.getItem("verbSetIndex")) || 0;
+let round = 1;
+let index = 0;
+let currentSet = [];
+let correct = 0;
+let wrong = 0;
+let answered = false;
+let mixMode = "";
+
+function normalize(text){
+  return text.toLowerCase().trim()
+    .replace(/č/g,"c").replace(/ć/g,"c").replace(/š/g,"s")
+    .replace(/đ/g,"dj").replace(/ž/g,"z")
+    .replace(/\s+/g," ");
+}
+
+function loadSet(){
+  const start = setIndex * setSize;
+  const end = start + setSize;
+  currentSet = allVerbs.slice(start, end);
+
+  if(currentSet.length === 0){
+    setIndex = 0;
+    localStorage.setItem("verbSetIndex", setIndex);
+    currentSet = allVerbs.slice(0, setSize);
+  }
+
+  round = 1;
+  index = 0;
+  correct = 0;
+  wrong = 0;
+  showVerb();
+}
+
+function showVerb(){
+  answered = false;
+  const v = currentSet[index];
+
+  document.getElementById("counter").innerText =
+    `Set ${setIndex + 1} | Krug ${round} | Glagol ${index + 1} od ${currentSet.length}`;
+
+  document.getElementById("result").innerHTML = "";
+  document.getElementById("answer").value = "";
+  document.getElementById("nextBtn").style.display = "none";
+
+  if(round === 1){
+    document.getElementById("verb").innerHTML =
+      `${v.base}<br><span style="font-size:28px;color:#facc15">${v.past} - ${v.pp}</span><br><span style="font-size:24px;color:#38bdf8">${v.sr}</span>`;
+
+    document.querySelector(".help").innerText = "Prvi krug: samo uči i čitaj.";
+    document.getElementById("answer").style.display = "none";
+    document.querySelector(".check").style.display = "none";
+    document.getElementById("nextBtn").style.display = "block";
+  }
+
+  if(round === 2){
+    const modes = ["past", "pp", "sr"];
+    mixMode = modes[Math.floor(Math.random() * modes.length)];
+
+    if(mixMode === "past"){
+      document.getElementById("verb").innerText = `${v.base} - ? - ${v.pp} - ${v.sr}`;
+      document.querySelector(".help").innerText = "Upiši Past Simple";
+    }
+
+    if(mixMode === "pp"){
+      document.getElementById("verb").innerText = `${v.base} - ${v.past} - ? - ${v.sr}`;
+      document.querySelector(".help").innerText = "Upiši Past Participle";
+    }
+
+    if(mixMode === "sr"){
+      document.getElementById("verb").innerText = `${v.base} - ${v.past} - ${v.pp} - ?`;
+      document.querySelector(".help").innerText = "Upiši prevod na srpskom";
+    }
+
+    document.getElementById("answer").style.display = "block";
+    document.querySelector(".check").style.display = "block";
+    document.getElementById("answer").focus();
+  }
+
+  if(round === 3){
+    document.getElementById("verb").innerText = v.base;
+    document.querySelector(".help").innerText = "Upiši: Past Simple + Past Participle + prevod";
+    document.getElementById("answer").style.display = "block";
+    document.querySelector(".check").style.display = "block";
+    document.getElementById("answer").focus();
+  }
+
+  updateScore();
+}
+
+function checkAnswer(){
+  if(answered) return;
+
+  const user = normalize(document.getElementById("answer").value);
+  const v = currentSet[index];
+  let correctAnswer = "";
+
+  if(round === 2){
+    if(mixMode === "past") correctAnswer = v.past;
+    if(mixMode === "pp") correctAnswer = v.pp;
+    if(mixMode === "sr") correctAnswer = v.sr;
+  }
+
+  if(round === 3){
+    correctAnswer = `${v.past} ${v.pp} ${v.sr}`;
+  }
+
+  answered = true;
+
+  if(user === normalize(correctAnswer)){
+    correct++;
+    document.getElementById("result").innerHTML =
+      `<div class="correct">Tačno ✅</div>`;
+  } else {
+    wrong++;
+    document.getElementById("result").innerHTML = `
+      <div class="wrong">Netačno ❌</div>
+      <div>Tačno je:</div>
+      <div class="answer">${v.base} - ${v.past} - ${v.pp}</div>
+      <div class="answer">${v.sr}</div>
+    `;
+  }
+
+  document.querySelector(".check").style.display = "none";
+  document.getElementById("nextBtn").style.display = "block";
+  updateScore();
+}
+
+function nextWord(){
+  index++;
+
+  if(index >= currentSet.length){
+    index = 0;
+    round++;
+
+    if(round > 3){
+      finishSet();
+      return;
+    }
+  }
+
+  showVerb();
+}
+
+function finishSet(){
+  document.getElementById("verb").innerText = "Set završen";
+  document.getElementById("counter").innerText = `Set ${setIndex + 1}`;
+  document.querySelector(".help").innerText = "";
+  document.getElementById("answer").style.display = "none";
+  document.querySelector(".check").style.display = "none";
+  document.getElementById("nextBtn").style.display = "none";
+
+  document.getElementById("result").innerHTML = `
+    <div class="correct">Rezultat: ${correct} tačno / ${wrong} netačno</div>
+    <button class="yellow" onclick="repeatSet()">Ponovi ovaj set</button>
+    <button class="green" onclick="nextSet()">Sledeći set</button>
+    <button onclick="previousSet()" style="background:#64748b;color:white;">Prethodni set</button>
+  `;
+}
+
+function repeatSet(){
+  round = 1;
+  index = 0;
+  correct = 0;
+  wrong = 0;
+  showVerb();
+}
+
+function nextSet(){
+  setIndex++;
+  localStorage.setItem("verbSetIndex", setIndex);
+  loadSet();
+}
+
+function previousSet(){
+  if(setIndex > 0){
+    setIndex--;
+    localStorage.setItem("verbSetIndex", setIndex);
+  }
+  loadSet();
+}
+
+function updateScore(){
+  document.getElementById("score").innerText =
+    `Tačno: ${correct} | Netačno: ${wrong}`;
+}
+
+document.getElementById("answer").addEventListener("keydown", function(e){
+  if(e.key === "Enter"){
+    if(!answered){ checkAnswer(); }
+    else{ nextWord(); }
+  }
+});
+
+loadSet();
+</script>
+
+</body>
+</html>
