@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Conversation Trainer</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
+body{background:#0f172a;color:white}
+.app{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+.card{width:100%;max-width:720px;background:#1e293b;border-radius:22px;padding:22px;text-align:center}
+.title{font-size:25px;color:#38bdf8;font-weight:bold;margin-bottom:10px}
+.menu{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0}
+button{border:none;border-radius:14px;padding:14px;font-size:17px;font-weight:bold;cursor:pointer}
+.menu button{background:#334155;color:white}
+.menu button:hover{background:#475569}
+.counter{color:#94a3b8;margin:10px 0}
+.scene{background:#0f172a;border:1px solid #334155;border-radius:16px;padding:14px;margin:12px 0;color:#cbd5e1;text-align:left;line-height:1.5}
+.task{font-size:23px;font-weight:bold;margin:18px 0;line-height:1.4}
+input{width:100%;padding:15px;border:none;border-radius:14px;font-size:18px;text-align:center;outline:none}
+.check{background:#22c55e;color:#052e16;width:100%;margin-top:10px}
+.next{background:#38bdf8;color:#020617;width:100%;margin-top:10px;display:none}
+.back{background:#64748b;color:white;width:100%;margin-top:10px}
+.result{margin-top:15px;min-height:70px}
+.correct{color:#22c55e;font-weight:bold}
+.wrong{color:#f87171;font-weight:bold}
+.answer{color:#facc15;font-size:20px;margin-top:7px;line-height:1.4}
+.explain{background:#0f172a;border:1px solid #334155;border-radius:14px;padding:12px;margin-top:10px;text-align:left;color:#cbd5e1;line-height:1.45}
+.log{max-height:180px;overflow:auto;background:#020617;border-radius:14px;padding:10px;margin-top:12px;text-align:left;color:#cbd5e1;font-size:14px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.stat{background:#0f172a;border:1px solid #334155;border-radius:14px;padding:10px;color:#cbd5e1}
+.stat b{display:block;color:white;font-size:20px}
+@media(max-width:520px){.menu{grid-template-columns:1fr}.task{font-size:20px}}
+</style>
+</head>
+
+<body>
+<div class="app">
+<div class="card">
+
+<div class="title">Conversation Trainer</div>
+
+<div id="startScreen">
+  <div class="scene">
+    Izaberi situaciju. Svaki put aplikacija pravi malo drugačiji razgovor kroz 10 koraka.
+    Ti prevodiš srpsku rečenicu na engleski.
+  </div>
+
+  <div class="menu">
+    <button onclick="startScenario('shop')">🛒 Prodavnica</button>
+    <button onclick="startScenario('restaurant')">🍽 Restoran</button>
+    <button onclick="startScenario('hotel')">🏨 Hotel</button>
+    <button onclick="startScenario('airport')">✈️ Aerodrom</button>
+  </div>
+</div>
+
+<div id="trainer" style="display:none">
+  <div class="counter" id="counter"></div>
+
+  <div class="stats">
+    <div class="stat">Tačno <b id="correctBox">0</b></div>
+    <div class="stat">Netačno <b id="wrongBox">0</b></div>
+    <div class="stat">Tačnost <b id="percentBox">0%</b></div>
+  </div>
+
+  <div class="scene" id="context"></div>
+  <div class="task" id="task"></div>
+
+  <input id="answer" placeholder="upiši na engleskom">
+
+  <button class="check" onclick="checkAnswer()">Check</button>
+  <button class="next" id="nextBtn" onclick="nextStep()">Next</button>
+
+  <div class="result" id="result"></div>
+
+  <div class="log" id="log"></div>
+
+  <button class="back" onclick="goBack()">⬅ Nazad na izbor</button>
+</div>
+
+</div>
+</div>
+
+<script>
+const data = {
+shop:[
+[
+{sr:"Dobar dan, tražim mleko.",en:"Good morning, I am looking for milk.",ex:"Looking for znači tražim. Možeš reći I am looking for..."},
+{sr:"Izvinite, gde je hleb?",en:"Excuse me, where is the bread?",ex:"Za pitanje gde je nešto koristi: Where is...?"},
+{sr:"Dobar dan, treba mi voda.",en:"Good morning, I need water.",ex:"I need znači treba mi."}
+],
+[
+{sr:"Da li imate sveže voće?",en:"Do you have fresh fruit?",ex:"Do you have...? znači Da li imate...?"},
+{sr:"Da li imate pileće meso?",en:"Do you have chicken?",ex:"Za pitanje koristi Do you have + stvar."},
+{sr:"Da li imate ovaj proizvod?",en:"Do you have this product?",ex:"This product znači ovaj proizvod."}
+],
+[
+{sr:"Koliko košta ovo?",en:"How much is this?",ex:"How much is this? je najčešće pitanje za cenu."},
+{sr:"Koja je cena?",en:"What is the price?",ex:"What is the price? znači Koja je cena?"},
+{sr:"Koliko košta jedna flaša?",en:"How much is one bottle?",ex:"How much is + stvar."}
+],
+[
+{sr:"Uzeću dva komada.",en:"I will take two.",ex:"I will take... koristiš kad odlučiš šta kupuješ."},
+{sr:"Uzeću ovo.",en:"I will take this.",ex:"This znači ovo."},
+{sr:"Uzeću jednu flašu vode.",en:"I will take one bottle of water.",ex:"One bottle of water = jedna flaša vode."}
+],
+[
+{sr:"Da li mogu da platim karticom?",en:"Can I pay by card?",ex:"Pay by card znači platiti karticom."},
+{sr:"Da li primate kartice?",en:"Do you accept cards?",ex:"Do you accept cards? znači Da li primate kartice?"},
+{sr:"Platiću karticom.",en:"I will pay by card.",ex:"Will pay = platiću."}
+],
+[
+{sr:"Treba mi račun.",en:"I need a receipt.",ex:"Receipt znači račun iz prodavnice."},
+{sr:"Možete li mi dati račun?",en:"Can you give me a receipt?",ex:"Can you give me...? znači Možete li mi dati...?"},
+{sr:"Molim vas račun.",en:"A receipt, please.",ex:"Kratko i prirodno: A receipt, please."}
+],
+[
+{sr:"Da li imate kesu?",en:"Do you have a bag?",ex:"Bag znači kesa/torba."},
+{sr:"Treba mi jedna kesa.",en:"I need one bag.",ex:"I need one bag = treba mi jedna kesa."},
+{sr:"Možete li mi dati kesu?",en:"Can you give me a bag?",ex:"Can you give me... je ljubazan oblik."}
+],
+[
+{sr:"Gde je kasa?",en:"Where is the checkout?",ex:"Checkout znači kasa/mesto za plaćanje."},
+{sr:"Da li je kasa tamo?",en:"Is the checkout over there?",ex:"Over there znači tamo."},
+{sr:"Idem na kasu.",en:"I am going to the checkout.",ex:"Going to znači idem ka."}
+],
+[
+{sr:"Hvala na pomoći.",en:"Thank you for your help.",ex:"Thank you for + stvar."},
+{sr:"Hvala, to je sve.",en:"Thank you, that is all.",ex:"That is all znači to je sve."},
+{sr:"Hvala, prijatan dan.",en:"Thank you, have a nice day.",ex:"Have a nice day je česta fraza."}
+],
+[
+{sr:"Doviđenja.",en:"Goodbye.",ex:"Goodbye znači doviđenja."},
+{sr:"Vidimo se.",en:"See you.",ex:"See you znači vidimo se."},
+{sr:"Prijatan dan.",en:"Have a nice day.",ex:"Uljudna završna fraza."}
+]
+],
+
+restaurant:[
+[
+{sr:"Dobar dan, sto za dvoje molim.",en:"Good afternoon, a table for two please.",ex:"A table for two = sto za dvoje."},
+{sr:"Imate li slobodan sto?",en:"Do you have a free table?",ex:"Do you have...? za pitanje da li imaju."},
+{sr:"Želim sto za jednu osobu.",en:"I would like a table for one.",ex:"I would like je ljubaznije od I want."}
+],
+[
+{sr:"Mogu li da vidim meni?",en:"Can I see the menu?",ex:"Can I see...? znači Mogu li da vidim...?"},
+{sr:"Donesite mi meni molim.",en:"Please bring me the menu.",ex:"Bring me znači donesite mi."},
+{sr:"Da li imate meni na engleskom?",en:"Do you have a menu in English?",ex:"In English = na engleskom."}
+],
+[
+{sr:"Šta preporučujete?",en:"What do you recommend?",ex:"Recommend znači preporučiti."},
+{sr:"Koje je najpopularnije jelo?",en:"What is the most popular dish?",ex:"Dish znači jelo."},
+{sr:"Imate li nešto lagano?",en:"Do you have something light?",ex:"Something light = nešto lagano."}
+],
+[
+{sr:"Uzeću piletinu.",en:"I will have chicken.",ex:"U restoranu često kažeš I will have..."},
+{sr:"Želim supu.",en:"I would like soup.",ex:"I would like = želeo bih."},
+{sr:"Uzeću ovo jelo.",en:"I will have this dish.",ex:"This dish = ovo jelo."}
+],
+[
+{sr:"Bez luka, molim.",en:"No onions, please.",ex:"No onions, please = bez luka, molim."},
+{sr:"Bez sosa, molim.",en:"No sauce, please.",ex:"No + stvar + please."},
+{sr:"Može li bez ljutog?",en:"Can it be not spicy?",ex:"Not spicy znači da nije ljuto."}
+],
+[
+{sr:"Donesite mi vodu.",en:"Please bring me water.",ex:"Bring me water = donesite mi vodu."},
+{sr:"Želim kafu.",en:"I would like coffee.",ex:"I would like je uljudno."},
+{sr:"Mogu li dobiti čašu vode?",en:"Can I have a glass of water?",ex:"Can I have...? je prirodno u restoranu."}
+],
+[
+{sr:"Hrana je odlična.",en:"The food is excellent.",ex:"Food = hrana, excellent = odlično."},
+{sr:"Veoma je ukusno.",en:"It is very tasty.",ex:"Tasty znači ukusno."},
+{sr:"Sve je dobro.",en:"Everything is good.",ex:"Everything = sve."}
+],
+[
+{sr:"Mogu li dobiti račun?",en:"Can I have the bill?",ex:"U restoranu bill znači račun."},
+{sr:"Račun molim.",en:"The bill, please.",ex:"Kratko i prirodno: The bill, please."},
+{sr:"Želim da platim.",en:"I would like to pay.",ex:"Would like to pay = želeo bih da platim."}
+],
+[
+{sr:"Da li mogu da platim karticom?",en:"Can I pay by card?",ex:"Pay by card = platiti karticom."},
+{sr:"Platiću kešom.",en:"I will pay in cash.",ex:"In cash = u kešu."},
+{sr:"Možemo li platiti odvojeno?",en:"Can we pay separately?",ex:"Separately = odvojeno."}
+],
+[
+{sr:"Hvala, prijatno.",en:"Thank you, have a nice day.",ex:"Uljudna završna fraza."},
+{sr:"Sve je bilo odlično.",en:"Everything was excellent.",ex:"Was se koristi za prošlost."},
+{sr:"Doviđenja.",en:"Goodbye.",ex:"Goodbye = doviđenja."}
+]
+],
+
+hotel:[
+[
+{sr:"Dobar dan, imam rezervaciju.",en:"Good afternoon, I have a reservation.",ex:"I have a reservation = imam rezervaciju."},
+{sr:"Želim da se prijavim.",en:"I would like to check in.",ex:"Check in = prijaviti se u hotel."},
+{sr:"Rezervacija je na moje ime.",en:"The reservation is under my name.",ex:"Under my name = na moje ime."}
+],
+[
+{sr:"Moje ime je Marko Petrović.",en:"My name is Marko Petrovic.",ex:"My name is... = moje ime je."},
+{sr:"Rezervisao sam sobu za dve noći.",en:"I booked a room for two nights.",ex:"Booked = rezervisao."},
+{sr:"Imam rezervaciju za jednu sobu.",en:"I have a reservation for one room.",ex:"For one room = za jednu sobu."}
+],
+[
+{sr:"Mogu li dobiti pasoš nazad?",en:"Can I get my passport back?",ex:"Get back = dobiti nazad."},
+{sr:"Evo mog pasoša.",en:"Here is my passport.",ex:"Here is... = evo."},
+{sr:"Da li vam treba moja lična karta?",en:"Do you need my ID?",ex:"ID = lična karta/dokument."}
+],
+[
+{sr:"Kada je doručak?",en:"When is breakfast?",ex:"When is...? = Kada je...?"},
+{sr:"Da li je doručak uključen?",en:"Is breakfast included?",ex:"Included = uključeno."},
+{sr:"Gde je restoran za doručak?",en:"Where is the breakfast restaurant?",ex:"Where is...? = gde je."}
+],
+[
+{sr:"Koji je broj moje sobe?",en:"What is my room number?",ex:"Room number = broj sobe."},
+{sr:"Gde je moja soba?",en:"Where is my room?",ex:"Where is my room = gde je moja soba."},
+{sr:"Na kom je spratu soba?",en:"What floor is the room on?",ex:"What floor = koji sprat."}
+],
+[
+{sr:"Wi-Fi ne radi.",en:"The Wi-Fi is not working.",ex:"Is not working = ne radi."},
+{sr:"Koja je Wi-Fi lozinka?",en:"What is the Wi-Fi password?",ex:"Password = lozinka."},
+{sr:"Treba mi internet.",en:"I need internet.",ex:"I need = treba mi."}
+],
+[
+{sr:"Treba mi dodatni peškir.",en:"I need an extra towel.",ex:"Extra towel = dodatni peškir."},
+{sr:"Soba nije čista.",en:"The room is not clean.",ex:"Not clean = nije čisto."},
+{sr:"Klima ne radi.",en:"The air conditioner is not working.",ex:"Air conditioner = klima."}
+],
+[
+{sr:"Mogu li promeniti sobu?",en:"Can I change the room?",ex:"Change the room = promeniti sobu."},
+{sr:"Soba je previše bučna.",en:"The room is too noisy.",ex:"Too noisy = previše bučna."},
+{sr:"Imam problem sa sobom.",en:"I have a problem with the room.",ex:"Problem with = problem sa."}
+],
+[
+{sr:"Želim da se odjavim.",en:"I would like to check out.",ex:"Check out = odjaviti se iz hotela."},
+{sr:"Kada je odjava?",en:"When is check-out?",ex:"Check-out = odjava."},
+{sr:"Mogu li se odjaviti kasnije?",en:"Can I check out later?",ex:"Later = kasnije."}
+],
+[
+{sr:"Hvala na pomoći.",en:"Thank you for your help.",ex:"Thank you for + stvar."},
+{sr:"Boravak je bio odličan.",en:"The stay was excellent.",ex:"Stay = boravak."},
+{sr:"Doviđenja.",en:"Goodbye.",ex:"Goodbye = doviđenja."}
+]
+],
+
+airport:[
+[
+{sr:"Dobar dan, gde je šalter za prijavu?",en:"Good morning, where is the check-in desk?",ex:"Check-in desk = šalter za prijavu."},
+{sr:"Želim da se prijavim za let.",en:"I would like to check in for my flight.",ex:"Check in for my flight = prijaviti se za let."},
+{sr:"Gde mogu da predam prtljag?",en:"Where can I drop off my luggage?",ex:"Drop off luggage = predati prtljag."}
+],
+[
+{sr:"Evo mog pasoša.",en:"Here is my passport.",ex:"Here is = evo."},
+{sr:"Evo moje karte.",en:"Here is my ticket.",ex:"Ticket = karta."},
+{sr:"Imam elektronsku kartu.",en:"I have an electronic ticket.",ex:"Electronic ticket = elektronska karta."}
+],
+[
+{sr:"Koliko torbi mogu da ponesem?",en:"How many bags can I take?",ex:"How many = koliko."},
+{sr:"Da li moram da platim prtljag?",en:"Do I have to pay for luggage?",ex:"Do I have to = da li moram."},
+{sr:"Ovo je moj ručni prtljag.",en:"This is my carry-on bag.",ex:"Carry-on bag = ručni prtljag."}
+],
+[
+{sr:"Gde je kontrola pasoša?",en:"Where is passport control?",ex:"Passport control = kontrola pasoša."},
+{sr:"Gde je sigurnosna kontrola?",en:"Where is security control?",ex:"Security control = sigurnosna kontrola."},
+{sr:"Da li moram ovde da čekam?",en:"Do I have to wait here?",ex:"Wait here = čekati ovde."}
+],
+[
+{sr:"Koji je izlaz za moj let?",en:"What is the gate for my flight?",ex:"Gate = izlaz za let."},
+{sr:"Gde je izlaz B12?",en:"Where is gate B12?",ex:"Where is gate... = gde je izlaz..."},
+{sr:"Da li je ovo pravi izlaz?",en:"Is this the right gate?",ex:"Right gate = pravi izlaz."}
+],
+[
+{sr:"Da li let kasni?",en:"Is the flight delayed?",ex:"Delayed = kasni."},
+{sr:"Kada počinje ukrcavanje?",en:"When does boarding start?",ex:"Boarding = ukrcavanje."},
+{sr:"U koliko sati poleće avion?",en:"What time does the plane leave?",ex:"What time does... = u koliko sati."}
+],
+[
+{sr:"Izgubio sam kartu.",en:"I lost my ticket.",ex:"Lost = izgubio."},
+{sr:"Ne mogu da nađem pasoš.",en:"I cannot find my passport.",ex:"Cannot find = ne mogu da nađem."},
+{sr:"Treba mi pomoć.",en:"I need help.",ex:"I need help = treba mi pomoć."}
+],
+[
+{sr:"Gde je toalet?",en:"Where is the restroom?",ex:"Restroom = toalet."},
+{sr:"Gde je menjačnica?",en:"Where is the exchange office?",ex:"Exchange office = menjačnica."},
+{sr:"Gde mogu kupiti vodu?",en:"Where can I buy water?",ex:"Where can I buy...? = gde mogu kupiti."}
+],
+[
+{sr:"Mogu li dobiti mesto pored prozora?",en:"Can I have a window seat?",ex:"Window seat = mesto pored prozora."},
+{sr:"Mogu li dobiti mesto do prolaza?",en:"Can I have an aisle seat?",ex:"Aisle seat = mesto do prolaza."},
+{sr:"Da li mogu promeniti sedište?",en:"Can I change my seat?",ex:"Change my seat = promeniti sedište."}
+],
+[
+{sr:"Hvala na pomoći.",en:"Thank you for your help.",ex:"Thank you for your help = hvala na pomoći."},
+{sr:"Sve je jasno, hvala.",en:"Everything is clear, thank you.",ex:"Everything is clear = sve je jasno."},
+{sr:"Prijatan dan.",en:"Have a nice day.",ex:"Have a nice day = prijatan dan."}
+]
+]
+};
+
+let scenario="";
+let path=[];
+let step=0;
+let answered=false;
+let correct=0;
+let wrong=0;
+
+function normalize(t){
+return t.toLowerCase().trim()
+.replace(/[.!?,]/g,"")
+.replace(/’/g,"'")
+.replace(/\s+/g," ");
+}
+
+function pick(arr){
+return arr[Math.floor(Math.random()*arr.length)];
+}
+
+function startScenario(name){
+scenario=name;
+path=data[name].map(stepOptions=>pick(stepOptions));
+step=0;
+answered=false;
+correct=0;
+wrong=0;
+document.getElementById("startScreen").style.display="none";
+document.getElementById("trainer").style.display="block";
+document.getElementById("log").innerHTML="";
+showStep();
+}
+
+function scenarioName(){
+if(scenario==="shop")return"Prodavnica";
+if(scenario==="restaurant")return"Restoran";
+if(scenario==="hotel")return"Hotel";
+if(scenario==="airport")return"Aerodrom";
+return"";
+}
+
+function showStep(){
+answered=false;
+let item=path[step];
+
+document.getElementById("counter").innerText=`${scenarioName()} | Korak ${step+1}/10`;
+document.getElementById("context").innerHTML=`Prevedi na engleski. Razgovor se razvija korak po korak.`;
+document.getElementById("task").innerText=item.sr;
+document.getElementById("answer").value="";
+document.getElementById("result").innerHTML="";
+document.getElementById("nextBtn").style.display="none";
+document.querySelector(".check").style.display="block";
+document.getElementById("answer").focus();
+
+updateStats();
+}
+
+function checkAnswer(){
+if(answered)return;
+answered=true;
+
+let item=path[step];
+let user=normalize(document.getElementById("answer").value);
+let expected=normalize(item.en);
+
+if(user===expected){
+correct++;
+document.getElementById("result").innerHTML=`<div class="correct">Tačno ✅</div><div class="answer">${item.en}</div>`;
+}else{
+wrong++;
+document.getElementById("result").innerHTML=`
+<div class="wrong">Netačno ❌</div>
+<div>Tačno je:</div>
+<div class="answer">${item.en}</div>
+<div class="explain"><b>Objašnjenje:</b><br>${item.ex}</div>`;
+}
+
+document.getElementById("log").innerHTML+=`
+<div><b>SR:</b> ${item.sr}</div>
+<div><b>EN:</b> ${item.en}</div><hr style="border:0;border-top:1px solid #334155;margin:8px 0">
+`;
+
+document.querySelector(".check").style.display="none";
+document.getElementById("nextBtn").style.display="block";
+updateStats();
+}
+
+function nextStep(){
+step++;
+if(step>=10){
+finishConversation();
+return;
+}
+showStep();
+}
+
+function finishConversation(){
+document.getElementById("counter").innerText=`${scenarioName()} završen`;
+document.getElementById("context").innerHTML="";
+document.getElementById("task").innerText="Razgovor je završen ✅";
+document.getElementById("answer").style.display="none";
+document.querySelector(".check").style.display="none";
+document.getElementById("nextBtn").style.display="none";
+
+let total=correct+wrong;
+let percent=total?Math.round((correct/total)*100):0;
+
+document.getElementById("result").innerHTML=`
+<div class="answer">Rezultat: ${correct}/${total} tačno (${percent}%)</div>
+<button class="check" onclick="restartSame()">Ponovi istu situaciju novim putem</button>
+<button class="back" onclick="goBack()">Izaberi drugu situaciju</button>
+`;
+}
+
+function restartSame(){
+document.getElementById("answer").style.display="block";
+startScenario(scenario);
+}
+
+function goBack(){
+document.getElementById("trainer").style.display="none";
+document.getElementById("startScreen").style.display="block";
+document.getElementById("answer").style.display="block";
+}
+
+function updateStats(){
+let total=correct+wrong;
+let percent=total?Math.round((correct/total)*100):0;
+document.getElementById("correctBox").innerText=correct;
+document.getElementById("wrongBox").innerText=wrong;
+document.getElementById("percentBox").innerText=percent+"%";
+}
+
+document.getElementById("answer").addEventListener("keydown",function(e){
+if(e.key==="Enter"){
+if(!answered)checkAnswer();
+else nextStep();
+}
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>IN / ON / AT Trainer</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
+body{background:#0f172a;color:white}
+.app{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:18px}
+.card{width:100%;max-width:650px;background:#1e293b;border-radius:22px;padding:24px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.title{font-size:24px;color:#38bdf8;font-weight:bold;margin-bottom:8px}
+.counter,.phaseText{color:#94a3b8;margin-bottom:10px}
+.serbian{font-size:19px;color:#cbd5e1;margin-top:14px;line-height:1.45}
+.word{font-size:28px;font-weight:bold;margin:18px 0;line-height:1.45;color:#fff}
+.blank{color:#facc15;border-bottom:2px solid #facc15;padding:0 8px}
+input{width:100%;padding:15px;border:none;border-radius:14px;font-size:20px;text-align:center;outline:none;text-transform:lowercase}
+button{width:100%;padding:14px;border:none;border-radius:14px;margin-top:10px;font-size:17px;font-weight:bold;cursor:pointer}
+.check{background:#22c55e;color:#052e16}
+.next{background:#38bdf8;color:#020617;display:none}
+.result{margin-top:15px;min-height:72px}
+.correct{color:#22c55e;font-weight:bold}
+.wrong{color:#f87171;font-weight:bold}
+.answer{color:#facc15;font-size:21px;margin-top:7px;line-height:1.4}
+.explain{background:#0f172a;border:1px solid #334155;border-radius:14px;padding:12px;margin-top:10px;color:#cbd5e1;line-height:1.45;text-align:left}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
+.stat{background:#0f172a;border:1px solid #334155;border-radius:14px;padding:10px;font-size:15px;color:#cbd5e1}
+.stat b{display:block;color:white;font-size:20px;margin-top:4px}
+.choiceRow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.choiceRow button{background:#334155;color:white;padding:12px;margin-top:0}
+.choiceRow button:hover{background:#475569}
+.nav{display:flex;gap:10px;margin-top:12px}
+.nav button{background:#64748b;color:white}
+.reset{background:#ef4444;color:white}
+.small{font-size:14px;color:#cbd5e1;margin-top:8px;line-height:1.4}
+@media(max-width:480px){.word{font-size:23px}.choiceRow{grid-template-columns:1fr 1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="card">
+
+  <div class="title">Prepositions: IN / ON / AT</div>
+  <div class="counter" id="counter"></div>
+  <div class="phaseText" id="phaseText">Upiši predlog koji nedostaje</div>
+
+  <div class="stats">
+    <div class="stat">Tačno <b id="correctBox">0</b></div>
+    <div class="stat">Netačno <b id="wrongBox">0</b></div>
+    <div class="stat">Tačnost <b id="percentBox">0%</b></div>
+  </div>
+
+  <div class="serbian" id="serbian"></div>
+  <div class="word" id="question"></div>
+
+  <input id="answer" placeholder="upiši: in, on ili at">
+
+  <div class="choiceRow" id="choices"></div>
+
+  <button class="check" onclick="checkAnswer()">Check</button>
+  <button class="next" id="nextBtn" onclick="nextItem()">Next</button>
+
+  <div class="result" id="result"></div>
+  <div class="small">Enter = Check, pa opet Enter = Next. Set ima 20 pitanja.</div>
+
+  <div class="nav">
+    <button onclick="prevSet()">⬅ Previous set</button>
+    <button onclick="nextSet()">Next set ➡</button>
+  </div>
+
+  <button class="reset" onclick="resetStats()">Reset score</button>
+
+</div>
+</div>
+
+<script>
+const questionBank = [
+  {
+    "p": "in",
+    "en": "I live ___ Serbia.",
+    "sr": "Živim u Srbiji.",
+    "rule": "Koristi se IN kada je nešto unutra, u prostoru, gradu, državi, sobi, vozilu ili sistemu."
+  },
+  {
+    "p": "in",
+    "en": "He is ___ the office.",
+    "sr": "On je u kancelariji.",
+    "rule": "Koristi se IN kada je nešto unutra, u prostoru, gradu, državi, sobi, vozilu ili sistemu."
+  },
+  {
+    "p": "in",
+    "en": "She is ___ the car.",
+    "sr": "Ona je u autu.",
+    "rule": "Koristi se IN kada je nešto unutra, u prostoru, gradu, državi, sobi, vozilu ili sistemu."
+  },
+  {
+    "p": "in",
+    "en": "The driver is ___ the truck.",
+    "sr": "Vozač je u kamionu.",
+    "rule": "Koristi se IN kada je nešto unutra, u prostoru, gradu, državi, sobi, vozilu ili sistemu."
+  },
+  {
+    "p": "in",
+    "en": "The keys are ___ my bag.",
+    "sr": "Ključevi su u mojoj torbi.",
+    "rule": "Koristi se IN kada je nešto unutra, u prostoru, gradu, državi, sobi, vozilu ili sistemu."
+  },
+  {
+    "p": "in",
+    "en": "There is water ___ the bottle.",
+    "sr": "Ima vode u flaši.",
+    "rule": "Koristi se IN kada je nešto unutra, u prostoru, gradu, državi, sobi, vozilu ili sistemu."
+  },
+  {
+    "p": "in",
+    "en": "The documents are ___ the folder.",
+    "sr": "Dokumenti su u folderu.",
+    "rule": "Koristi se IN kada je nešto unutra, u prostoru, gradu, državi, sobi, vozilu ili sistemu."
+  },
+  {
+    "p": "in",
+    "en": "My phone is ___ my pocket.",
+    "sr": "Telefon je u mom džepu.",
+    "rule": "Koristi se IN kada je nešto unutra, u prostoru, gradu, državi, sobi, vozilu ili sistemu."
+  },
+  {
+    "p": "in",
+    "en": "We are ___ the room.",
+    "sr": "Mi smo u sobi.",
+    "rule": "Koristi se IN kada je nešto unutra, u prostoru, gradu, državi, sobi, vozilu ili sistemu."
+  },
+  {
+    "p": "in",
+    "en": "The shop is ___ the city center.",
+    "sr": "Prodavnica je u centru grada.",
+    "rule": "Koristi se IN kada je nešto unutra, u prostoru, gradu, državi, sobi, vozilu ili sistemu."
+  },
+  {
+    "p": "in",
+    "en": "The app is ___ English.",
+    "sr": "Aplikacija je na engleskom.",
+    "rule": "Koristi se IN kada je nešto unutra, u prostoru, gradu, državi, sobi, vozilu ili sistemu."
+  },
+  {
+    "p": "in",
+    "en": "I am interested ___ English.",
+    "sr": "Zainteresovan sam za engleski.",
+    "rule": "U izrazu interested in koristi se IN: I am interested in English."
+  },
+  {
+    "p": "in",
+    "en": "He works ___ logistics.",
+    "sr": "On radi u logistici.",
+    "rule": "Koristi se IN kada je nešto unutra, u prostoru, gradu, državi, sobi, vozilu ili sistemu."
+  },
+  {
+    "p": "in",
+    "en": "The answer is ___ the email.",
+    "sr": "Odgovor je u emailu.",
+    "rule": "Koristi se IN kada je nešto unutra, u prostoru, gradu, državi, sobi, vozilu ili sistemu."
+  },
+  {
+    "p": "in",
+    "en": "The mistake is ___ the report.",
+    "sr": "Greška je u izveštaju.",
+    "rule": "Koristi se IN kada je nešto unutra, u prostoru, gradu, državi, sobi, vozilu ili sistemu."
+  },
+  {
+    "p": "in",
+    "en": "I wake up ___ the morning.",
+    "sr": "Budim se ujutru.",
+    "rule": "Koristi se IN za delove dana, mesece, godine, sezone i period: in the morning, in July, in 2021, in two hours."
+  },
+  {
+    "p": "in",
+    "en": "I work ___ the evening.",
+    "sr": "Radim uveče.",
+    "rule": "Koristi se IN za delove dana, mesece, godine, sezone i period: in the morning, in July, in 2021, in two hours."
+  },
+  {
+    "p": "in",
+    "en": "We rest ___ the afternoon.",
+    "sr": "Odmaramo popodne.",
+    "rule": "Koristi se IN za delove dana, mesece, godine, sezone i period: in the morning, in July, in 2021, in two hours."
+  },
+  {
+    "p": "in",
+    "en": "It is cold ___ winter.",
+    "sr": "Hladno je zimi.",
+    "rule": "Koristi se IN za delove dana, mesece, godine, sezone i period: in the morning, in July, in 2021, in two hours."
+  },
+  {
+    "p": "in",
+    "en": "It is hot ___ summer.",
+    "sr": "Vruće je leti.",
+    "rule": "Koristi se IN za delove dana, mesece, godine, sezone i period: in the morning, in July, in 2021, in two hours."
+  },
+  {
+    "p": "in",
+    "en": "We travel ___ July.",
+    "sr": "Putujemo u julu.",
+    "rule": "Koristi se IN za delove dana, mesece, godine, sezone i period: in the morning, in July, in 2021, in two hours."
+  },
+  {
+    "p": "in",
+    "en": "The meeting is ___ September.",
+    "sr": "Sastanak je u septembru.",
+    "rule": "Koristi se IN za delove dana, mesece, godine, sezone i period: in the morning, in July, in 2021, in two hours."
+  },
+  {
+    "p": "in",
+    "en": "I started this job ___ 2021.",
+    "sr": "Počeo sam ovaj posao 2021. godine.",
+    "rule": "Koristi se IN za delove dana, mesece, godine, sezone i period: in the morning, in July, in 2021, in two hours."
+  },
+  {
+    "p": "in",
+    "en": "I was born ___ 1990.",
+    "sr": "Rođen sam 1990. godine.",
+    "rule": "Koristi se IN za delove dana, mesece, godine, sezone i period: in the morning, in July, in 2021, in two hours."
+  },
+  {
+    "p": "in",
+    "en": "He will call me ___ five minutes.",
+    "sr": "Pozvaće me za pet minuta.",
+    "rule": "Koristi se IN za delove dana, mesece, godine, sezone i period: in the morning, in July, in 2021, in two hours."
+  },
+  {
+    "p": "in",
+    "en": "The report will be ready ___ two hours.",
+    "sr": "Izveštaj će biti spreman za dva sata.",
+    "rule": "Koristi se IN za delove dana, mesece, godine, sezone i period: in the morning, in July, in 2021, in two hours."
+  },
+  {
+    "p": "in",
+    "en": "I will finish it ___ a few days.",
+    "sr": "Završiću to za nekoliko dana.",
+    "rule": "Koristi se IN za delove dana, mesece, godine, sezone i period: in the morning, in July, in 2021, in two hours."
+  },
+  {
+    "p": "in",
+    "en": "We are ___ a hurry.",
+    "sr": "Žurimo.",
+    "rule": "U izrazu in a hurry koristi se IN."
+  },
+  {
+    "p": "in",
+    "en": "The driver is ___ trouble.",
+    "sr": "Vozač je u problemu.",
+    "rule": "U izrazu in trouble koristi se IN."
+  },
+  {
+    "p": "in",
+    "en": "He is ___ a meeting.",
+    "sr": "On je na sastanku.",
+    "rule": "Za situaciju kada je neko unutar aktivnosti/sastanka često se koristi IN: in a meeting."
+  },
+  {
+    "p": "in",
+    "en": "She is ___ good condition.",
+    "sr": "Ona je u dobrom stanju.",
+    "rule": "U izrazu in good condition koristi se IN."
+  },
+  {
+    "p": "in",
+    "en": "The truck is ___ bad condition.",
+    "sr": "Kamion je u lošem stanju.",
+    "rule": "U izrazu in bad condition koristi se IN."
+  },
+  {
+    "p": "in",
+    "en": "I am ___ the middle of work.",
+    "sr": "Usred posla sam.",
+    "rule": "U izrazu in the middle of koristi se IN."
+  },
+  {
+    "p": "in",
+    "en": "The answer is ___ the first sentence.",
+    "sr": "Odgovor je u prvoj rečenici.",
+    "rule": "Koristi se IN kada je nešto unutra, u prostoru, gradu, državi, sobi, vozilu ili sistemu."
+  },
+  {
+    "p": "in",
+    "en": "There are many cars ___ the street.",
+    "sr": "Ima mnogo automobila u ulici.",
+    "rule": "Kada mislimo na prostor unutar ulice, može IN the street."
+  },
+  {
+    "p": "in",
+    "en": "He lives ___ a small town.",
+    "sr": "On živi u malom gradu.",
+    "rule": "Koristi se IN kada je nešto unutra, u prostoru, gradu, državi, sobi, vozilu ili sistemu."
+  },
+  {
+    "p": "in",
+    "en": "They are ___ the same company.",
+    "sr": "Oni su u istoj kompaniji.",
+    "rule": "Koristi se IN kada je nešto unutra, u prostoru, gradu, državi, sobi, vozilu ili sistemu."
+  },
+  {
+    "p": "in",
+    "en": "The file is ___ this folder.",
+    "sr": "Fajl je u ovom folderu.",
+    "rule": "Koristi se IN kada je nešto unutra, u prostoru, gradu, državi, sobi, vozilu ili sistemu."
+  },
+  {
+    "p": "in",
+    "en": "The truck is ___ the parking lot.",
+    "sr": "Kamion je na parkingu.",
+    "rule": "Parking lot se ovde tretira kao prostor, zato IN."
+  },
+  {
+    "p": "in",
+    "en": "The driver is ___ the hospital.",
+    "sr": "Vozač je u bolnici.",
+    "rule": "Koristi se IN kada je nešto unutra, u prostoru, gradu, državi, sobi, vozilu ili sistemu."
+  },
+  {
+    "p": "in",
+    "en": "I am ___ front of the hotel.",
+    "sr": "Ispred hotela sam.",
+    "rule": "Tačan izraz je in front of = ispred."
+  },
+  {
+    "p": "in",
+    "en": "There is a cafe ___ front of the bank.",
+    "sr": "Kafić je ispred banke.",
+    "rule": "Tačan izraz je in front of = ispred."
+  },
+  {
+    "p": "in",
+    "en": "I believe ___ this plan.",
+    "sr": "Verujem u ovaj plan.",
+    "rule": "U izrazu believe in koristi se IN."
+  },
+  {
+    "p": "in",
+    "en": "He succeeded ___ the test.",
+    "sr": "Uspeo je na testu.",
+    "rule": "U izrazu succeed in koristi se IN."
+  },
+  {
+    "p": "in",
+    "en": "The office is ___ a new building.",
+    "sr": "Kancelarija je u novoj zgradi.",
+    "rule": "Koristi se IN kada je nešto unutra, u prostoru, gradu, državi, sobi, vozilu ili sistemu."
+  },
+  {
+    "p": "in",
+    "en": "The children are ___ school.",
+    "sr": "Deca su u školi.",
+    "rule": "Za stanje/aktivnost školovanja često se kaže in school."
+  },
+  {
+    "p": "in",
+    "en": "The driver is ___ line.",
+    "sr": "Vozač je u redu/liniji.",
+    "rule": "U izrazu in line koristi se IN."
+  },
+  {
+    "p": "in",
+    "en": "The information is ___ the system.",
+    "sr": "Informacija je u sistemu.",
+    "rule": "Koristi se IN kada je nešto unutra, u prostoru, gradu, državi, sobi, vozilu ili sistemu."
+  },
+  {
+    "p": "in",
+    "en": "There is a problem ___ the app.",
+    "sr": "Postoji problem u aplikaciji.",
+    "rule": "Koristi se IN kada je nešto unutra, u prostoru, gradu, državi, sobi, vozilu ili sistemu."
+  },
+  {
+    "p": "in",
+    "en": "I have experience ___ monitoring.",
+    "sr": "Imam iskustva u monitoringu.",
+    "rule": "U izrazu experience in + oblast koristi se IN."
+  },
+  {
+    "p": "on",
+    "en": "The book is ___ the table.",
+    "sr": "Knjiga je na stolu.",
+    "rule": "Koristi se ON kada je nešto na površini, strani, ekranu, telefonu, putu, ulici ili platformi."
+  },
+  {
+    "p": "on",
+    "en": "The phone is ___ the desk.",
+    "sr": "Telefon je na stolu.",
+    "rule": "Koristi se ON kada je nešto na površini, strani, ekranu, telefonu, putu, ulici ili platformi."
+  },
+  {
+    "p": "on",
+    "en": "The picture is ___ the wall.",
+    "sr": "Slika je na zidu.",
+    "rule": "Koristi se ON kada je nešto na površini, strani, ekranu, telefonu, putu, ulici ili platformi."
+  },
+  {
+    "p": "on",
+    "en": "The address is ___ the document.",
+    "sr": "Adresa je na dokumentu.",
+    "rule": "Koristi se ON kada je nešto na površini, strani, ekranu, telefonu, putu, ulici ili platformi."
+  },
+  {
+    "p": "on",
+    "en": "The file is ___ the screen.",
+    "sr": "Fajl je na ekranu.",
+    "rule": "Koristi se ON kada je nešto na površini, strani, ekranu, telefonu, putu, ulici ili platformi."
+  },
+  {
+    "p": "on",
+    "en": "The app is ___ my phone.",
+    "sr": "Aplikacija je na mom telefonu.",
+    "rule": "Koristi se ON kada je nešto na površini, strani, ekranu, telefonu, putu, ulici ili platformi."
+  },
+  {
+    "p": "on",
+    "en": "I am ___ the phone.",
+    "sr": "Na telefonu sam.",
+    "rule": "Koristi se ON kada je nešto na površini, strani, ekranu, telefonu, putu, ulici ili platformi."
+  },
+  {
+    "p": "on",
+    "en": "The truck is ___ the road.",
+    "sr": "Kamion je na putu.",
+    "rule": "Koristi se ON kada je nešto na površini, strani, ekranu, telefonu, putu, ulici ili platformi."
+  },
+  {
+    "p": "on",
+    "en": "The bank is ___ Main Street.",
+    "sr": "Banka je u Glavnoj ulici.",
+    "rule": "Koristi se ON kada je nešto na površini, strani, ekranu, telefonu, putu, ulici ili platformi."
+  },
+  {
+    "p": "on",
+    "en": "There is a cafe ___ the corner.",
+    "sr": "Kafić je na uglu.",
+    "rule": "Koristi se ON kada je nešto na površini, strani, ekranu, telefonu, putu, ulici ili platformi."
+  },
+  {
+    "p": "on",
+    "en": "The car is ___ the left side.",
+    "sr": "Auto je na levoj strani.",
+    "rule": "Koristi se ON kada je nešto na površini, strani, ekranu, telefonu, putu, ulici ili platformi."
+  },
+  {
+    "p": "on",
+    "en": "The gas station is ___ the right.",
+    "sr": "Pumpa je desno.",
+    "rule": "U izrazu on the right koristi se ON."
+  },
+  {
+    "p": "on",
+    "en": "The hotel is ___ the left.",
+    "sr": "Hotel je levo.",
+    "rule": "U izrazu on the left koristi se ON."
+  },
+  {
+    "p": "on",
+    "en": "The driver is ___ duty.",
+    "sr": "Vozač je na dužnosti.",
+    "rule": "U izrazu on duty koristi se ON."
+  },
+  {
+    "p": "on",
+    "en": "He is ___ break.",
+    "sr": "On je na pauzi.",
+    "rule": "U izrazu on break koristi se ON."
+  },
+  {
+    "p": "on",
+    "en": "The driver is ___ time.",
+    "sr": "Vozač je na vreme.",
+    "rule": "On time znači na vreme, bez kašnjenja."
+  },
+  {
+    "p": "on",
+    "en": "She arrived ___ time.",
+    "sr": "Stigla je na vreme.",
+    "rule": "On time znači na vreme, bez kašnjenja."
+  },
+  {
+    "p": "on",
+    "en": "The report is ___ my list.",
+    "sr": "Izveštaj je na mojoj listi.",
+    "rule": "Koristi se ON kada je nešto na površini, strani, ekranu, telefonu, putu, ulici ili platformi."
+  },
+  {
+    "p": "on",
+    "en": "Your name is ___ the list.",
+    "sr": "Tvoje ime je na listi.",
+    "rule": "Koristi se ON kada je nešto na površini, strani, ekranu, telefonu, putu, ulici ili platformi."
+  },
+  {
+    "p": "on",
+    "en": "The button is ___ the right side.",
+    "sr": "Dugme je na desnoj strani.",
+    "rule": "Koristi se ON kada je nešto na površini, strani, ekranu, telefonu, putu, ulici ili platformi."
+  },
+  {
+    "p": "on",
+    "en": "I work ___ Monday.",
+    "sr": "Radim u ponedeljak.",
+    "rule": "Koristi se ON za dane i tačne datume: on Monday, on Friday, on May 10th."
+  },
+  {
+    "p": "on",
+    "en": "The inspection is ___ Friday.",
+    "sr": "Inspekcija je u petak.",
+    "rule": "Koristi se ON za dane i tačne datume: on Monday, on Friday, on May 10th."
+  },
+  {
+    "p": "on",
+    "en": "We travel ___ Sunday.",
+    "sr": "Putujemo u nedelju.",
+    "rule": "Koristi se ON za dane i tačne datume: on Monday, on Friday, on May 10th."
+  },
+  {
+    "p": "on",
+    "en": "The meeting is ___ Tuesday.",
+    "sr": "Sastanak je u utorak.",
+    "rule": "Koristi se ON za dane i tačne datume: on Monday, on Friday, on May 10th."
+  },
+  {
+    "p": "on",
+    "en": "The report is due ___ Wednesday.",
+    "sr": "Izveštaj je do srede.",
+    "rule": "Koristi se ON za dane i tačne datume: on Monday, on Friday, on May 10th."
+  },
+  {
+    "p": "on",
+    "en": "I have training ___ Thursday.",
+    "sr": "Imam trening u četvrtak.",
+    "rule": "Koristi se ON za dane i tačne datume: on Monday, on Friday, on May 10th."
+  },
+  {
+    "p": "on",
+    "en": "The office is closed ___ Saturday.",
+    "sr": "Kancelarija je zatvorena u subotu.",
+    "rule": "Koristi se ON za dane i tačne datume: on Monday, on Friday, on May 10th."
+  },
+  {
+    "p": "on",
+    "en": "I visit my parents ___ Sunday.",
+    "sr": "Posećujem roditelje u nedelju.",
+    "rule": "Koristi se ON za dane i tačne datume: on Monday, on Friday, on May 10th."
+  },
+  {
+    "p": "on",
+    "en": "The meeting is ___ May 10th.",
+    "sr": "Sastanak je 10. maja.",
+    "rule": "Koristi se ON za dane i tačne datume: on Monday, on Friday, on May 10th."
+  },
+  {
+    "p": "on",
+    "en": "I was born ___ June 5th.",
+    "sr": "Rođen sam 5. juna.",
+    "rule": "Koristi se ON za dane i tačne datume: on Monday, on Friday, on May 10th."
+  },
+  {
+    "p": "on",
+    "en": "The app works ___ Android.",
+    "sr": "Aplikacija radi na Androidu.",
+    "rule": "Koristi se ON kada je nešto na površini, strani, ekranu, telefonu, putu, ulici ili platformi."
+  },
+  {
+    "p": "on",
+    "en": "The app works ___ iPhone.",
+    "sr": "Aplikacija radi na iPhone-u.",
+    "rule": "Koristi se ON kada je nešto na površini, strani, ekranu, telefonu, putu, ulici ili platformi."
+  },
+  {
+    "p": "on",
+    "en": "I saw it ___ YouTube.",
+    "sr": "Video sam to na YouTube-u.",
+    "rule": "Koristi se ON kada je nešto na površini, strani, ekranu, telefonu, putu, ulici ili platformi."
+  },
+  {
+    "p": "on",
+    "en": "I found it ___ Google.",
+    "sr": "Pronašao sam to na Google-u.",
+    "rule": "Koristi se ON kada je nešto na površini, strani, ekranu, telefonu, putu, ulici ili platformi."
+  },
+  {
+    "p": "on",
+    "en": "He posted it ___ Facebook.",
+    "sr": "Objavio je to na Facebook-u.",
+    "rule": "Koristi se ON kada je nešto na površini, strani, ekranu, telefonu, putu, ulici ili platformi."
+  },
+  {
+    "p": "on",
+    "en": "Send it ___ WhatsApp.",
+    "sr": "Pošalji to na WhatsApp.",
+    "rule": "Koristi se ON kada je nešto na površini, strani, ekranu, telefonu, putu, ulici ili platformi."
+  },
+  {
+    "p": "on",
+    "en": "The message is ___ Telegram.",
+    "sr": "Poruka je na Telegramu.",
+    "rule": "Koristi se ON kada je nešto na površini, strani, ekranu, telefonu, putu, ulici ili platformi."
+  },
+  {
+    "p": "on",
+    "en": "Click ___ the button.",
+    "sr": "Klikni na dugme.",
+    "rule": "Koristi se ON kada je nešto na površini, strani, ekranu, telefonu, putu, ulici ili platformi."
+  },
+  {
+    "p": "on",
+    "en": "Tap ___ the screen.",
+    "sr": "Dodirni ekran.",
+    "rule": "Koristi se ON kada je nešto na površini, strani, ekranu, telefonu, putu, ulici ili platformi."
+  },
+  {
+    "p": "on",
+    "en": "Write it ___ paper.",
+    "sr": "Napiši to na papiru.",
+    "rule": "Koristi se ON kada je nešto na površini, strani, ekranu, telefonu, putu, ulici ili platformi."
+  },
+  {
+    "p": "on",
+    "en": "The number is ___ the card.",
+    "sr": "Broj je na kartici.",
+    "rule": "Koristi se ON kada je nešto na površini, strani, ekranu, telefonu, putu, ulici ili platformi."
+  },
+  {
+    "p": "on",
+    "en": "The label is ___ the box.",
+    "sr": "Nalepnica je na kutiji.",
+    "rule": "Koristi se ON kada je nešto na površini, strani, ekranu, telefonu, putu, ulici ili platformi."
+  },
+  {
+    "p": "on",
+    "en": "The truck is ___ the highway.",
+    "sr": "Kamion je na autoputu.",
+    "rule": "Koristi se ON kada je nešto na površini, strani, ekranu, telefonu, putu, ulici ili platformi."
+  },
+  {
+    "p": "on",
+    "en": "There is traffic ___ the bridge.",
+    "sr": "Ima gužve na mostu.",
+    "rule": "Koristi se ON kada je nešto na površini, strani, ekranu, telefonu, putu, ulici ili platformi."
+  },
+  {
+    "p": "on",
+    "en": "The driver is ___ the way.",
+    "sr": "Vozač je na putu.",
+    "rule": "U izrazu on the way koristi se ON."
+  },
+  {
+    "p": "on",
+    "en": "I am ___ my way home.",
+    "sr": "Na putu sam kući.",
+    "rule": "U izrazu on my way koristi se ON."
+  },
+  {
+    "p": "on",
+    "en": "He is ___ vacation.",
+    "sr": "On je na odmoru.",
+    "rule": "U američkom engleskom kaže se on vacation."
+  },
+  {
+    "p": "on",
+    "en": "The computer is ___ the table.",
+    "sr": "Računar je na stolu.",
+    "rule": "Koristi se ON kada je nešto na površini, strani, ekranu, telefonu, putu, ulici ili platformi."
+  },
+  {
+    "p": "on",
+    "en": "The truck is ___ the scale.",
+    "sr": "Kamion je na vagi.",
+    "rule": "Koristi se ON kada je nešto na površini, strani, ekranu, telefonu, putu, ulici ili platformi."
+  },
+  {
+    "p": "on",
+    "en": "The company is ___ the map.",
+    "sr": "Kompanija je na mapi.",
+    "rule": "Koristi se ON kada je nešto na površini, strani, ekranu, telefonu, putu, ulici ili platformi."
+  },
+  {
+    "p": "at",
+    "en": "I am ___ home.",
+    "sr": "Kod kuće sam.",
+    "rule": "Koristi se AT za tačnu lokaciju ili tačku: at home, at work, at the traffic light, at the bus stop."
+  },
+  {
+    "p": "at",
+    "en": "He is ___ work.",
+    "sr": "On je na poslu.",
+    "rule": "Koristi se AT za tačnu lokaciju ili tačku: at home, at work, at the traffic light, at the bus stop."
+  },
+  {
+    "p": "at",
+    "en": "She is ___ school.",
+    "sr": "Ona je u školi.",
+    "rule": "Koristi se AT za tačnu lokaciju ili tačku: at home, at work, at the traffic light, at the bus stop."
+  },
+  {
+    "p": "at",
+    "en": "The driver is ___ the warehouse.",
+    "sr": "Vozač je u skladištu.",
+    "rule": "Koristi se AT za tačnu lokaciju ili tačku: at home, at work, at the traffic light, at the bus stop."
+  },
+  {
+    "p": "at",
+    "en": "The truck is ___ the gas station.",
+    "sr": "Kamion je na benzinskoj pumpi.",
+    "rule": "Koristi se AT za tačnu lokaciju ili tačku: at home, at work, at the traffic light, at the bus stop."
+  },
+  {
+    "p": "at",
+    "en": "Turn right ___ the traffic light.",
+    "sr": "Skreni desno kod semafora.",
+    "rule": "Koristi se AT za tačnu lokaciju ili tačku: at home, at work, at the traffic light, at the bus stop."
+  },
+  {
+    "p": "at",
+    "en": "Stop ___ the intersection.",
+    "sr": "Stani na raskrsnici.",
+    "rule": "Koristi se AT za tačnu lokaciju ili tačku: at home, at work, at the traffic light, at the bus stop."
+  },
+  {
+    "p": "at",
+    "en": "I met him ___ the airport.",
+    "sr": "Sreo sam ga na aerodromu.",
+    "rule": "Koristi se AT za tačnu lokaciju ili tačku: at home, at work, at the traffic light, at the bus stop."
+  },
+  {
+    "p": "at",
+    "en": "She is waiting ___ the bus stop.",
+    "sr": "Ona čeka na autobuskoj stanici.",
+    "rule": "Koristi se AT za tačnu lokaciju ili tačku: at home, at work, at the traffic light, at the bus stop."
+  },
+  {
+    "p": "at",
+    "en": "We are ___ the entrance.",
+    "sr": "Mi smo na ulazu.",
+    "rule": "Koristi se AT za tačnu lokaciju ili tačku: at home, at work, at the traffic light, at the bus stop."
+  },
+  {
+    "p": "at",
+    "en": "The driver is ___ the door.",
+    "sr": "Vozač je kod vrata.",
+    "rule": "Koristi se AT za tačnu lokaciju ili tačku: at home, at work, at the traffic light, at the bus stop."
+  },
+  {
+    "p": "at",
+    "en": "I am ___ the hotel.",
+    "sr": "Ja sam u hotelu/kod hotela.",
+    "rule": "Koristi se AT za tačnu lokaciju ili tačku: at home, at work, at the traffic light, at the bus stop."
+  },
+  {
+    "p": "at",
+    "en": "They are ___ the restaurant.",
+    "sr": "Oni su u restoranu.",
+    "rule": "Koristi se AT za tačnu lokaciju ili tačku: at home, at work, at the traffic light, at the bus stop."
+  },
+  {
+    "p": "at",
+    "en": "The truck is ___ the border.",
+    "sr": "Kamion je na granici.",
+    "rule": "Koristi se AT za tačnu lokaciju ili tačku: at home, at work, at the traffic light, at the bus stop."
+  },
+  {
+    "p": "at",
+    "en": "The driver stopped ___ the checkpoint.",
+    "sr": "Vozač je stao na kontrolnoj tački.",
+    "rule": "Koristi se AT za tačnu lokaciju ili tačku: at home, at work, at the traffic light, at the bus stop."
+  },
+  {
+    "p": "at",
+    "en": "The meeting starts ___ 9 o'clock.",
+    "sr": "Sastanak počinje u 9 sati.",
+    "rule": "Koristi se AT za tačno vreme: at 9 o'clock, at noon, at midnight, at 3:30."
+  },
+  {
+    "p": "at",
+    "en": "Call me ___ noon.",
+    "sr": "Pozovi me u podne.",
+    "rule": "Koristi se AT za tačno vreme: at 9 o'clock, at noon, at midnight, at 3:30."
+  },
+  {
+    "p": "at",
+    "en": "I go to bed ___ midnight.",
+    "sr": "Idem na spavanje u ponoć.",
+    "rule": "Koristi se AT za tačno vreme: at 9 o'clock, at noon, at midnight, at 3:30."
+  },
+  {
+    "p": "at",
+    "en": "The driver starts ___ 7 AM.",
+    "sr": "Vozač počinje u 7 ujutru.",
+    "rule": "Koristi se AT za tačno vreme: at 9 o'clock, at noon, at midnight, at 3:30."
+  },
+  {
+    "p": "at",
+    "en": "We finish work ___ 5 PM.",
+    "sr": "Završavamo posao u 5 popodne.",
+    "rule": "Koristi se AT za tačno vreme: at 9 o'clock, at noon, at midnight, at 3:30."
+  },
+  {
+    "p": "at",
+    "en": "The appointment is ___ 3:30.",
+    "sr": "Termin je u 3:30.",
+    "rule": "Koristi se AT za tačno vreme: at 9 o'clock, at noon, at midnight, at 3:30."
+  },
+  {
+    "p": "at",
+    "en": "Be here ___ 8 sharp.",
+    "sr": "Budi ovde tačno u 8.",
+    "rule": "Koristi se AT za tačno vreme: at 9 o'clock, at noon, at midnight, at 3:30."
+  },
+  {
+    "p": "at",
+    "en": "He called me ___ the same time.",
+    "sr": "Pozvao me je u isto vreme.",
+    "rule": "Koristi se AT za tačno vreme: at 9 o'clock, at noon, at midnight, at 3:30."
+  },
+  {
+    "p": "at",
+    "en": "I usually eat ___ lunchtime.",
+    "sr": "Obično jedem u vreme ručka.",
+    "rule": "Koristi se AT za tačno vreme: at 9 o'clock, at noon, at midnight, at 3:30."
+  },
+  {
+    "p": "at",
+    "en": "The store closes ___ night.",
+    "sr": "Prodavnica se zatvara noću.",
+    "rule": "At night je ustaljen izraz za noću."
+  },
+  {
+    "p": "at",
+    "en": "I am good ___ English.",
+    "sr": "Dobar sam u engleskom.",
+    "rule": "U izrazu good at nešto koristi se AT."
+  },
+  {
+    "p": "at",
+    "en": "He is bad ___ parking.",
+    "sr": "Loš je u parkiranju.",
+    "rule": "U izrazu bad at nešto koristi se AT."
+  },
+  {
+    "p": "at",
+    "en": "She is looking ___ the screen.",
+    "sr": "Ona gleda u ekran.",
+    "rule": "Look at znači gledati u nešto."
+  },
+  {
+    "p": "at",
+    "en": "Do not look ___ me like that.",
+    "sr": "Ne gledaj me tako.",
+    "rule": "Look at me = gledaj u mene."
+  },
+  {
+    "p": "at",
+    "en": "I laughed ___ the joke.",
+    "sr": "Nasmejao sam se šali.",
+    "rule": "Laugh at znači smejati se nečemu."
+  },
+  {
+    "p": "at",
+    "en": "He shouted ___ the driver.",
+    "sr": "Vikao je na vozača.",
+    "rule": "Shout at znači vikati na nekoga."
+  },
+  {
+    "p": "at",
+    "en": "The price starts ___ 100 dollars.",
+    "sr": "Cena počinje od 100 dolara.",
+    "rule": "At se koristi za tačan nivo/cenu: at 100 dollars."
+  },
+  {
+    "p": "at",
+    "en": "The speed is ___ 60 mph.",
+    "sr": "Brzina je 60 milja na sat.",
+    "rule": "At se koristi za tačan nivo/brzinu."
+  },
+  {
+    "p": "at",
+    "en": "The temperature is ___ zero.",
+    "sr": "Temperatura je na nuli.",
+    "rule": "At se koristi za tačan nivo/tačku."
+  },
+  {
+    "p": "at",
+    "en": "The truck arrived ___ the terminal.",
+    "sr": "Kamion je stigao na terminal.",
+    "rule": "Koristi se AT za tačnu lokaciju ili tačku: at home, at work, at the traffic light, at the bus stop."
+  },
+  {
+    "p": "at",
+    "en": "I am ___ the front desk.",
+    "sr": "Ja sam na recepciji.",
+    "rule": "Koristi se AT za tačnu lokaciju ili tačku: at home, at work, at the traffic light, at the bus stop."
+  },
+  {
+    "p": "at",
+    "en": "The package is ___ reception.",
+    "sr": "Paket je na recepciji.",
+    "rule": "Koristi se AT za tačnu lokaciju ili tačku: at home, at work, at the traffic light, at the bus stop."
+  },
+  {
+    "p": "at",
+    "en": "Wait ___ the corner.",
+    "sr": "Čekaj na uglu.",
+    "rule": "Koristi se AT za tačnu lokaciju ili tačku: at home, at work, at the traffic light, at the bus stop."
+  },
+  {
+    "p": "at",
+    "en": "Turn left ___ the bank.",
+    "sr": "Skreni levo kod banke.",
+    "rule": "Koristi se AT za tačnu lokaciju ili tačku: at home, at work, at the traffic light, at the bus stop."
+  },
+  {
+    "p": "at",
+    "en": "The driver is ___ the first stop.",
+    "sr": "Vozač je na prvoj stanici.",
+    "rule": "Koristi se AT za tačnu lokaciju ili tačku: at home, at work, at the traffic light, at the bus stop."
+  },
+  {
+    "p": "at",
+    "en": "He is ___ the end of the street.",
+    "sr": "On je na kraju ulice.",
+    "rule": "Koristi se AT za tačnu lokaciju ili tačku: at home, at work, at the traffic light, at the bus stop."
+  },
+  {
+    "p": "at",
+    "en": "Start ___ the beginning.",
+    "sr": "Počni od početka.",
+    "rule": "Koristi se AT za tačnu lokaciju ili tačku: at home, at work, at the traffic light, at the bus stop."
+  },
+  {
+    "p": "at",
+    "en": "The problem is ___ the top of the page.",
+    "sr": "Problem je na vrhu strane.",
+    "rule": "Koristi se AT za tačnu lokaciju ili tačku: at home, at work, at the traffic light, at the bus stop."
+  },
+  {
+    "p": "at",
+    "en": "My office is ___ 15 King Street.",
+    "sr": "Moja kancelarija je na adresi 15 King Street.",
+    "rule": "Za tačnu adresu koristi se AT."
+  },
+  {
+    "p": "at",
+    "en": "They live ___ 22 Main Road.",
+    "sr": "Oni žive na adresi 22 Main Road.",
+    "rule": "Za tačnu adresu koristi se AT."
+  },
+  {
+    "p": "at",
+    "en": "The meeting is ___ the company office.",
+    "sr": "Sastanak je u kancelariji kompanije.",
+    "rule": "Koristi se AT za tačnu lokaciju ili tačku: at home, at work, at the traffic light, at the bus stop."
+  },
+  {
+    "p": "at",
+    "en": "I was ___ a party last night.",
+    "sr": "Bio sam na zabavi sinoć.",
+    "rule": "Koristi se AT za tačnu lokaciju ili tačku: at home, at work, at the traffic light, at the bus stop."
+  },
+  {
+    "p": "at",
+    "en": "We were ___ a concert.",
+    "sr": "Bili smo na koncertu.",
+    "rule": "Koristi se AT za tačnu lokaciju ili tačku: at home, at work, at the traffic light, at the bus stop."
+  },
+  {
+    "p": "at",
+    "en": "She is ___ the doctor.",
+    "sr": "Ona je kod doktora.",
+    "rule": "At the doctor znači kod doktora."
+  },
+  {
+    "p": "at",
+    "en": "He is ___ the dentist.",
+    "sr": "On je kod zubara.",
+    "rule": "At the dentist znači kod zubara."
+  }
+];
+
+const setSize = 20;
+const allOptions = ["in","on","at"];
+
+let questions = shuffleArray([...questionBank]);
+let setIndex = Number(localStorage.getItem("inOnAtSetIndexV2")) || 0;
+let currentSet = [];
+let currentIndex = 0;
+let answered = false;
+let correctCount = Number(localStorage.getItem("inOnAtCorrectV2")) || 0;
+let wrongCount = Number(localStorage.getItem("inOnAtWrongV2")) || 0;
+
+function shuffleArray(arr){
+  return arr.sort(() => Math.random() - 0.5);
+}
+
+function normalize(text){
+  return text.toLowerCase().trim()
+    .replace(/[.!?,]/g,"")
+    .replace(/\s+/g," ");
+}
+
+function loadSet(){
+  const start = setIndex * setSize;
+  currentSet = questions.slice(start, start + setSize);
+
+  if(currentSet.length === 0){
+    setIndex = 0;
+    localStorage.setItem("inOnAtSetIndexV2", 0);
+    currentSet = questions.slice(0, setSize);
+  }
+
+  currentIndex = 0;
+  showItem();
+}
+
+function renderChoices(correct){
+  let options = shuffleArray([...allOptions]);
+  if(!options.includes(correct)){
+    options[0] = correct;
+    options = shuffleArray(options);
+  }
+
+  document.getElementById("choices").innerHTML = options.map(opt =>
+    `<button onclick="quickAnswer('${opt}')">${opt}</button>`
+  ).join("");
+}
+
+function showItem(){
+  answered = false;
+  const q = currentSet[currentIndex];
+
+  document.getElementById("counter").innerText =
+    `Set ${setIndex + 1} | Pitanje ${currentIndex + 1}/${currentSet.length} | Ukupno: ${questions.length}`;
+
+  document.getElementById("phaseText").innerText = "Upiši predlog koji nedostaje";
+  document.getElementById("serbian").innerText = q.sr;
+  document.getElementById("question").innerHTML =
+    q.en.replace("___", `<span class="blank">___</span>`);
+
+  document.getElementById("answer").value = "";
+  document.getElementById("result").innerHTML = "";
+  document.getElementById("nextBtn").style.display = "none";
+  document.querySelector(".check").style.display = "block";
+  document.getElementById("answer").style.display = "block";
+
+  renderChoices(q.p);
+  updateStats();
+  document.getElementById("answer").focus();
+}
+
+function quickAnswer(value){
+  if(answered) return;
+  document.getElementById("answer").value = value;
+  checkAnswer();
+}
+
+function checkAnswer(){
+  if(answered) return;
+
+  answered = true;
+  const q = currentSet[currentIndex];
+  const user = normalize(document.getElementById("answer").value);
+  const correct = normalize(q.p);
+  const fullSentence = q.en.replace("___", q.p);
+
+  if(user === correct){
+    correctCount++;
+    document.getElementById("result").innerHTML =
+      `<div class="correct">Tačno ✅</div>
+       <div class="answer">${fullSentence}</div>`;
+  } else {
+    wrongCount++;
+    document.getElementById("result").innerHTML =
+      `<div class="wrong">Netačno ❌</div>
+       <div>Tačno je:</div>
+       <div class="answer">${q.p}</div>
+       <div class="answer">${fullSentence}</div>
+       <div class="explain"><b>Objašnjenje:</b><br>${q.rule}</div>`;
+  }
+
+  localStorage.setItem("inOnAtCorrectV2", correctCount);
+  localStorage.setItem("inOnAtWrongV2", wrongCount);
+
+  updateStats();
+  document.querySelector(".check").style.display = "none";
+  document.getElementById("nextBtn").style.display = "block";
+}
+
+function nextItem(){
+  currentIndex++;
+  if(currentIndex >= currentSet.length){
+    finishSet();
+    return;
+  }
+  showItem();
+}
+
+function finishSet(){
+  document.getElementById("phaseText").innerText = "";
+  document.getElementById("serbian").innerText = "";
+  document.getElementById("question").innerText = "Set završen";
+  document.getElementById("answer").style.display = "none";
+  document.querySelector(".check").style.display = "none";
+  document.getElementById("nextBtn").style.display = "none";
+  document.getElementById("choices").innerHTML = "";
+
+  document.getElementById("result").innerHTML =
+    `<button onclick="loadSet()" style="background:#facc15;color:#111827">Ponovi set</button>
+     <button onclick="nextSet()" style="background:#22c55e;color:#052e16">Sledeći set</button>`;
+}
+
+function nextSet(){
+  setIndex++;
+  localStorage.setItem("inOnAtSetIndexV2", setIndex);
+  loadSet();
+}
+
+function prevSet(){
+  if(setIndex > 0) setIndex--;
+  localStorage.setItem("inOnAtSetIndexV2", setIndex);
+  loadSet();
+}
+
+function updateStats(){
+  const total = correctCount + wrongCount;
+  const percent = total ? Math.round((correctCount / total) * 100) : 0;
+
+  document.getElementById("correctBox").innerText = correctCount;
+  document.getElementById("wrongBox").innerText = wrongCount;
+  document.getElementById("percentBox").innerText = percent + "%";
+}
+
+function resetStats(){
+  correctCount = 0;
+  wrongCount = 0;
+  localStorage.setItem("inOnAtCorrectV2", 0);
+  localStorage.setItem("inOnAtWrongV2", 0);
+  updateStats();
+  document.getElementById("result").innerHTML =
+    `<div class="answer">Score je resetovan.</div>`;
+}
+
+document.getElementById("answer").addEventListener("keydown", function(e){
+  if(e.key === "Enter"){
+    if(!answered) checkAnswer();
+    else nextItem();
+  }
+});
+
+loadSet();
+</script>
+</body>
+</html>

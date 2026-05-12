@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Prepositions Trainer 240</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
+body{background:#0f172a;color:white}
+.app{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:18px}
+.card{width:100%;max-width:670px;background:#1e293b;border-radius:22px;padding:24px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.title{font-size:24px;color:#38bdf8;font-weight:bold;margin-bottom:8px}
+.counter,.phaseText{color:#94a3b8;margin-bottom:10px}
+.serbian{font-size:19px;color:#cbd5e1;margin-top:14px;line-height:1.45}
+.word{font-size:28px;font-weight:bold;margin:18px 0;line-height:1.45;color:#fff}
+.blank{color:#facc15;border-bottom:2px solid #facc15;padding:0 8px}
+input{width:100%;padding:15px;border:none;border-radius:14px;font-size:20px;text-align:center;outline:none;text-transform:lowercase}
+button{width:100%;padding:14px;border:none;border-radius:14px;margin-top:10px;font-size:17px;font-weight:bold;cursor:pointer}
+.check{background:#22c55e;color:#052e16}
+.next{background:#38bdf8;color:#020617;display:none}
+.result{margin-top:15px;min-height:72px}
+.correct{color:#22c55e;font-weight:bold}
+.wrong{color:#f87171;font-weight:bold}
+.answer{color:#facc15;font-size:21px;margin-top:7px;line-height:1.4}
+.explain{background:#0f172a;border:1px solid #334155;border-radius:14px;padding:12px;margin-top:10px;color:#cbd5e1;line-height:1.45;text-align:left}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
+.stat{background:#0f172a;border:1px solid #334155;border-radius:14px;padding:10px;font-size:15px;color:#cbd5e1}
+.stat b{display:block;color:white;font-size:20px;margin-top:4px}
+.choiceRow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.choiceRow button{background:#334155;color:white;padding:12px;margin-top:0}
+.choiceRow button:hover{background:#475569}
+.nav{display:flex;gap:10px;margin-top:12px}
+.nav button{background:#64748b;color:white}
+.reset{background:#ef4444;color:white}
+.small{font-size:14px;color:#cbd5e1;margin-top:8px;line-height:1.4}
+@media(max-width:480px){.word{font-size:23px}.choiceRow{grid-template-columns:1fr 1fr 1fr}}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+<div class="card">
+
+  <div class="title">Prepositions Trainer 240</div>
+  <div class="counter" id="counter"></div>
+  <div class="phaseText" id="phaseText">Upiši predlog koji nedostaje</div>
+
+  <div class="stats">
+    <div class="stat">Tačno <b id="correctBox">0</b></div>
+    <div class="stat">Netačno <b id="wrongBox">0</b></div>
+    <div class="stat">Tačnost <b id="percentBox">0%</b></div>
+  </div>
+
+  <div class="serbian" id="serbian"></div>
+  <div class="word" id="question"></div>
+
+  <input id="answer" placeholder="upiši predlog">
+
+  <div class="choiceRow" id="choices"></div>
+
+  <button class="check" onclick="checkAnswer()">Check</button>
+  <button class="next" id="nextBtn" onclick="nextItem()">Next</button>
+
+  <div class="result" id="result"></div>
+  <div class="small">Enter = Check, pa opet Enter = Next. Set ima 20 pitanja.</div>
+
+  <div class="nav">
+    <button onclick="prevSet()">⬅ Previous set</button>
+    <button onclick="nextSet()">Next set ➡</button>
+  </div>
+
+  <button class="reset" onclick="resetStats()">Reset score</button>
+
+</div>
+</div>
+
+<script>
+const allPrepositions = [
+  "in","on","at","to","from","by","with","for","about","of",
+  "into","out of","under","over","through","between","behind",
+  "next to","across from","after","before"
+];
+
+const questionBank = [
+/* IN */
+{p:"in",en:"I live ___ Serbia.",sr:"Živim u Srbiji.",rule:"IN se koristi za države, gradove i veće prostore: in Serbia, in Niš, in the city."},
+{p:"in",en:"He is ___ the office.",sr:"On je u kancelariji.",rule:"IN znači da je neko unutra u prostoru: in the office."},
+{p:"in",en:"The keys are ___ my bag.",sr:"Ključevi su u mojoj torbi.",rule:"IN koristimo kada je nešto unutra: in my bag."},
+{p:"in",en:"There is water ___ the bottle.",sr:"Ima vode u flaši.",rule:"IN se koristi za nešto što je unutra u posudi: in the bottle."},
+{p:"in",en:"She is ___ the car.",sr:"Ona je u autu.",rule:"IN se koristi za unutrašnjost vozila: in the car."},
+{p:"in",en:"The driver is ___ the truck.",sr:"Vozač je u kamionu.",rule:"IN se koristi kada je vozač unutra u kamionu."},
+{p:"in",en:"The documents are ___ the folder.",sr:"Dokumenti su u folderu.",rule:"IN znači da su dokumenti unutar foldera."},
+{p:"in",en:"The phone is ___ my pocket.",sr:"Telefon je u mom džepu.",rule:"IN se koristi za nešto što je unutra: in my pocket."},
+{p:"in",en:"We are ___ the room.",sr:"Mi smo u sobi.",rule:"IN znači unutra u prostoru: in the room."},
+{p:"in",en:"The shop is ___ the city center.",sr:"Prodavnica je u centru grada.",rule:"IN se koristi za oblast ili deo grada: in the city center."},
+{p:"in",en:"I wake up ___ the morning.",sr:"Budim se ujutru.",rule:"Za delove dana koristimo IN: in the morning, in the afternoon, in the evening."},
+{p:"in",en:"I work ___ the evening.",sr:"Radim uveče.",rule:"Za evening ide IN: in the evening."},
+{p:"in",en:"It is cold ___ winter.",sr:"Hladno je zimi.",rule:"Za godišnja doba koristimo IN: in winter, in summer."},
+{p:"in",en:"We travel ___ July.",sr:"Putujemo u julu.",rule:"Za mesece koristimo IN: in July."},
+{p:"in",en:"The meeting is ___ September.",sr:"Sastanak je u septembru.",rule:"Za mesece koristimo IN: in September."},
+{p:"in",en:"I started this job ___ 2021.",sr:"Počeo sam ovaj posao 2021. godine.",rule:"Za godine koristimo IN: in 2021."},
+{p:"in",en:"I was born ___ 1990.",sr:"Rođen sam 1990. godine.",rule:"Za godine koristimo IN: in 1990."},
+{p:"in",en:"He will call me ___ five minutes.",sr:"Pozvaće me za pet minuta.",rule:"Za vreme u budućnosti koristimo IN: in five minutes = za pet minuta."},
+{p:"in",en:"The report is ready ___ two hours.",sr:"Izveštaj je spreman za dva sata.",rule:"IN + period znači za toliko vremena: in two hours."},
+{p:"in",en:"We usually rest ___ the afternoon.",sr:"Obično odmaramo popodne.",rule:"Za afternoon koristimo IN: in the afternoon."},
+
+/* AT */
+{p:"at",en:"I am ___ home.",sr:"Kod kuće sam.",rule:"AT koristimo za tačku/lokaciju kao mesto: at home."},
+{p:"at",en:"He is ___ work.",sr:"On je na poslu.",rule:"AT se koristi u izrazu at work = na poslu."},
+{p:"at",en:"She is ___ school.",sr:"Ona je u školi.",rule:"AT school znači da je neko u školi kao lokaciji/aktivnosti."},
+{p:"at",en:"The truck is ___ the gas station.",sr:"Kamion je na benzinskoj pumpi.",rule:"AT koristimo za konkretnu tačku/lokaciju: at the gas station."},
+{p:"at",en:"Turn right ___ the traffic light.",sr:"Skreni desno kod semafora.",rule:"Za tačku na putu koristimo AT: at the traffic light."},
+{p:"at",en:"Stop ___ the intersection.",sr:"Stani na raskrsnici.",rule:"Intersection je tačka na putu, zato AT."},
+{p:"at",en:"I met him ___ the airport.",sr:"Sreo sam ga na aerodromu.",rule:"AT koristimo kada mislimo na lokaciju kao tačku: at the airport."},
+{p:"at",en:"She is waiting ___ the bus stop.",sr:"Ona čeka na autobuskoj stanici.",rule:"Bus stop je tačna lokacija, zato AT."},
+{p:"at",en:"The driver is ___ the warehouse.",sr:"Vozač je u skladištu.",rule:"Warehouse kao tačna lokacija: at the warehouse."},
+{p:"at",en:"We are ___ the entrance.",sr:"Mi smo na ulazu.",rule:"Entrance je tačna tačka, zato AT."},
+{p:"at",en:"The meeting starts ___ 9 o'clock.",sr:"Sastanak počinje u 9 sati.",rule:"Za tačno vreme koristimo AT: at 9 o'clock."},
+{p:"at",en:"Call me ___ noon.",sr:"Pozovi me u podne.",rule:"Za noon koristimo AT: at noon."},
+{p:"at",en:"I go to bed ___ midnight.",sr:"Idem na spavanje u ponoć.",rule:"Za midnight koristimo AT: at midnight."},
+{p:"at",en:"The driver starts ___ 7 AM.",sr:"Vozač počinje u 7 ujutru.",rule:"Za tačno vreme koristimo AT: at 7 AM."},
+{p:"at",en:"We finish work ___ 5 PM.",sr:"Završavamo posao u 5 popodne.",rule:"Za tačno vreme koristimo AT: at 5 PM."},
+{p:"at",en:"The store closes ___ night.",sr:"Prodavnica se zatvara noću.",rule:"Ustaljen izraz je AT night = noću."},
+{p:"at",en:"I usually eat ___ lunchtime.",sr:"Obično jedem u vreme ručka.",rule:"Za određenu tačku u danu koristimo AT: at lunchtime."},
+{p:"at",en:"He called me ___ the same time.",sr:"Pozvao me je u isto vreme.",rule:"U izrazu at the same time koristi se AT."},
+{p:"at",en:"Be here ___ 8 sharp.",sr:"Budi ovde tačno u 8.",rule:"Za tačno vreme koristimo AT."},
+{p:"at",en:"The appointment is ___ 3:30.",sr:"Termin je u 3:30.",rule:"Za tačno vreme koristimo AT: at 3:30."},
+
+/* ON */
+{p:"on",en:"The book is ___ the table.",sr:"Knjiga je na stolu.",rule:"ON se koristi za površinu: on the table."},
+{p:"on",en:"The phone is ___ the desk.",sr:"Telefon je na stolu.",rule:"ON znači na površini: on the desk."},
+{p:"on",en:"The picture is ___ the wall.",sr:"Slika je na zidu.",rule:"Za nešto na površini zida koristimo ON."},
+{p:"on",en:"The address is ___ the document.",sr:"Adresa je na dokumentu.",rule:"Na dokumentu = on the document."},
+{p:"on",en:"The truck is ___ the road.",sr:"Kamion je na putu.",rule:"Za put/road često koristimo ON: on the road."},
+{p:"on",en:"The bank is ___ Main Street.",sr:"Banka je u Glavnoj ulici.",rule:"Za ulice koristimo ON: on Main Street."},
+{p:"on",en:"There is a cafe ___ the corner.",sr:"Kafić je na uglu.",rule:"U izrazu on the corner koristi se ON."},
+{p:"on",en:"I am ___ the phone.",sr:"Na telefonu sam.",rule:"U izrazu on the phone koristi se ON."},
+{p:"on",en:"The app is ___ my phone.",sr:"Aplikacija je na mom telefonu.",rule:"Za uređaj/platformu koristimo ON: on my phone."},
+{p:"on",en:"The file is ___ the screen.",sr:"Fajl je na ekranu.",rule:"Za ekran koristimo ON: on the screen."},
+{p:"on",en:"I work ___ Monday.",sr:"Radim u ponedeljak.",rule:"Za dane koristimo ON: on Monday."},
+{p:"on",en:"The inspection is ___ Friday.",sr:"Inspekcija je u petak.",rule:"Za dane koristimo ON: on Friday."},
+{p:"on",en:"We travel ___ Sunday.",sr:"Putujemo u nedelju.",rule:"Za dane koristimo ON: on Sunday."},
+{p:"on",en:"The meeting is ___ May 10th.",sr:"Sastanak je 10. maja.",rule:"Za tačan datum koristimo ON: on May 10th."},
+{p:"on",en:"I was busy ___ the weekend.",sr:"Bio sam zauzet za vikend.",rule:"U američkom engleskom često se koristi on the weekend."},
+{p:"on",en:"The report is due ___ Tuesday.",sr:"Izveštaj je do utorka.",rule:"Za dane koristimo ON: on Tuesday."},
+{p:"on",en:"She arrived ___ time.",sr:"Stigla je na vreme.",rule:"On time znači na vreme, bez kašnjenja."},
+{p:"on",en:"The driver is ___ duty.",sr:"Vozač je na dužnosti.",rule:"U izrazu on duty koristi se ON."},
+{p:"on",en:"He is ___ break.",sr:"On je na pauzi.",rule:"U izrazu on break koristi se ON."},
+{p:"on",en:"The car is ___ the left side.",sr:"Auto je na levoj strani.",rule:"Za stranu koristimo ON: on the left side."},
+
+/* TO */
+{p:"to",en:"I am going ___ work.",sr:"Idem na posao.",rule:"TO pokazuje pravac/kretanje ka mestu: go to work."},
+{p:"to",en:"Go ___ the traffic light.",sr:"Idi do semafora.",rule:"TO znači do/ka nekoj tački: to the traffic light."},
+{p:"to",en:"Send the file ___ me.",sr:"Pošalji fajl meni.",rule:"TO pokazuje primaoca: send it to me."},
+{p:"to",en:"Give this document ___ the driver.",sr:"Daj ovaj dokument vozaču.",rule:"TO pokazuje kome dajemo nešto."},
+{p:"to",en:"Turn right ___ the hospital.",sr:"Skreni desno ka bolnici.",rule:"TO može značiti ka/pravac prema nečemu."},
+{p:"to",en:"I need ___ call him.",sr:"Treba da ga pozovem.",rule:"Posle need ide to + glagol: need to call."},
+{p:"to",en:"She wants ___ learn English.",sr:"Ona želi da uči engleski.",rule:"Posle want ide to + glagol: want to learn."},
+{p:"to",en:"We went ___ the city center.",sr:"Išli smo do centra grada.",rule:"TO pokazuje destinaciju: went to the city center."},
+{p:"to",en:"Drive ___ the warehouse.",sr:"Vozi do skladišta.",rule:"TO pokazuje destinaciju."},
+{p:"to",en:"The road goes ___ the airport.",sr:"Put vodi do aerodroma.",rule:"TO pokazuje pravac/destinaciju."},
+
+/* FROM */
+{p:"from",en:"I am ___ Serbia.",sr:"Ja sam iz Srbije.",rule:"FROM znači iz/odakle: from Serbia."},
+{p:"from",en:"This message is ___ the driver.",sr:"Ova poruka je od vozača.",rule:"FROM pokazuje od koga nešto dolazi."},
+{p:"from",en:"The office is far ___ here.",sr:"Kancelarija je daleko odavde.",rule:"Far from = daleko od."},
+{p:"from",en:"He works ___ 8 to 5.",sr:"Radi od 8 do 5.",rule:"FROM označava početak perioda: from 8 to 5."},
+{p:"from",en:"The truck came ___ Chicago.",sr:"Kamion je došao iz Čikaga.",rule:"FROM pokazuje mesto porekla."},
+{p:"from",en:"I received an email ___ the company.",sr:"Dobio sam email od kompanije.",rule:"Email dolazi od nekoga: from the company."},
+{p:"from",en:"Remove this item ___ the list.",sr:"Ukloni ovu stavku sa liste.",rule:"Remove from = ukloniti iz/sa."},
+{p:"from",en:"The gas station is across ___ the hotel.",sr:"Pumpa je preko puta hotela.",rule:"Izraz je across from = preko puta."},
+{p:"from",en:"He is away ___ home.",sr:"On je daleko od kuće.",rule:"Away from = daleko od."},
+{p:"from",en:"Start ___ the beginning.",sr:"Počni od početka.",rule:"Start from = početi od."},
+
+/* BY */
+{p:"by",en:"I go to work ___ car.",sr:"Idem na posao autom.",rule:"BY koristimo za način prevoza: by car, by bus."},
+{p:"by",en:"Send it ___ email.",sr:"Pošalji emailom.",rule:"BY pokazuje način/slanje: by email."},
+{p:"by",en:"The report must be ready ___ Monday.",sr:"Izveštaj mora biti spreman do ponedeljka.",rule:"BY znači najkasnije do nekog roka."},
+{p:"by",en:"The hotel is ___ the river.",sr:"Hotel je pored reke.",rule:"BY može značiti pored/blizu."},
+{p:"by",en:"I learned English ___ practice.",sr:"Naučio sam engleski kroz vežbu.",rule:"BY pokazuje metod: by practice."},
+{p:"by",en:"This app was made ___ me.",sr:"Ovu aplikaciju sam napravio ja.",rule:"BY pokazuje ko je izvršilac radnje."},
+{p:"by",en:"He came ___ bus.",sr:"Došao je autobusom.",rule:"BY koristimo za prevoz: by bus."},
+{p:"by",en:"The shop is ___ the bank.",sr:"Prodavnica je pored banke.",rule:"BY može značiti pored."},
+{p:"by",en:"Please finish this ___ tomorrow.",sr:"Molim te završi ovo do sutra.",rule:"BY znači do/najkasnije do."},
+{p:"by",en:"I pay ___ card.",sr:"Plaćam karticom.",rule:"BY pokazuje metod plaćanja: by card."},
+
+/* WITH */
+{p:"with",en:"I work ___ my team.",sr:"Radim sa svojim timom.",rule:"WITH znači sa nekim/nečim."},
+{p:"with",en:"Come ___ me.",sr:"Pođi sa mnom.",rule:"WITH znači sa."},
+{p:"with",en:"He is talking ___ the driver.",sr:"On razgovara sa vozačem.",rule:"Talk with = razgovarati sa."},
+{p:"with",en:"I need help ___ this problem.",sr:"Treba mi pomoć sa ovim problemom.",rule:"Help with = pomoć oko/sa nečim."},
+{p:"with",en:"She writes ___ a pen.",sr:"Ona piše olovkom.",rule:"WITH pokazuje alat kojim radimo nešto."},
+{p:"with",en:"Open the door ___ this key.",sr:"Otvori vrata ovim ključem.",rule:"WITH pokazuje sredstvo/alati."},
+{p:"with",en:"I agree ___ you.",sr:"Slažem se sa tobom.",rule:"Agree with = slagati se sa nekim."},
+{p:"with",en:"He works ___ many companies.",sr:"On radi sa mnogo kompanija.",rule:"WITH znači sa."},
+{p:"with",en:"The driver has problems ___ the app.",sr:"Vozač ima probleme sa aplikacijom.",rule:"Problems with = problemi sa."},
+{p:"with",en:"Drink coffee ___ milk.",sr:"Pij kafu sa mlekom.",rule:"WITH znači sa nečim dodatim."},
+
+/* FOR */
+{p:"for",en:"This message is ___ you.",sr:"Ova poruka je za tebe.",rule:"FOR znači za nekoga/nešto."},
+{p:"for",en:"I work ___ this company.",sr:"Radim za ovu kompaniju.",rule:"FOR znači za koga radimo."},
+{p:"for",en:"Wait ___ me.",sr:"Sačekaj me.",rule:"Wait for = čekati nekoga."},
+{p:"for",en:"I have worked here ___ five years.",sr:"Radim ovde pet godina.",rule:"FOR označava trajanje: for five years."},
+{p:"for",en:"This app is ___ drivers.",sr:"Ova aplikacija je za vozače.",rule:"FOR znači namenjeno za."},
+{p:"for",en:"Thank you ___ your help.",sr:"Hvala na pomoći.",rule:"Thank you for = hvala za/na."},
+{p:"for",en:"I need it ___ tomorrow.",sr:"Treba mi za sutra.",rule:"FOR pokazuje za kada/za koju svrhu."},
+{p:"for",en:"He is responsible ___ reports.",sr:"On je odgovoran za izveštaje.",rule:"Responsible for = odgovoran za."},
+{p:"for",en:"This is good ___ practice.",sr:"Ovo je dobro za vežbu.",rule:"Good for = dobro za."},
+{p:"for",en:"I am looking ___ the document.",sr:"Tražim dokument.",rule:"Look for = tražiti."},
+
+/* ABOUT */
+{p:"about",en:"We are talking ___ the app.",sr:"Pričamo o aplikaciji.",rule:"ABOUT znači o nečemu."},
+{p:"about",en:"I have a question ___ the report.",sr:"Imam pitanje o izveštaju.",rule:"Question about = pitanje o."},
+{p:"about",en:"Tell me ___ the problem.",sr:"Reci mi o problemu.",rule:"Tell me about = reci mi o."},
+{p:"about",en:"He is worried ___ the inspection.",sr:"On je zabrinut zbog inspekcije.",rule:"Worried about = zabrinut zbog/o."},
+{p:"about",en:"I know a lot ___ trucks.",sr:"Znam dosta o kamionima.",rule:"Know about = znati o."},
+{p:"about",en:"What is this email ___?",sr:"O čemu je ovaj email?",rule:"ABOUT znači o čemu."},
+{p:"about",en:"They asked ___ the driver.",sr:"Pitali su za vozača.",rule:"Ask about = pitati o/za."},
+{p:"about",en:"We spoke ___ the new system.",sr:"Pričali smo o novom sistemu.",rule:"Speak about = pričati o."},
+{p:"about",en:"I am learning ___ prepositions.",sr:"Učim o predlozima.",rule:"Learn about = učiti o."},
+{p:"about",en:"There is nothing ___ this issue.",sr:"Nema ništa o ovom problemu.",rule:"ABOUT znači o ovoj temi/problemu."},
+
+/* OF */
+{p:"of",en:"The name ___ the company is short.",sr:"Ime kompanije je kratko.",rule:"OF pokazuje pripadnost: name of the company."},
+{p:"of",en:"The end ___ the street is near.",sr:"Kraj ulice je blizu.",rule:"OF znači od/nečega: end of the street."},
+{p:"of",en:"A glass ___ water is on the table.",sr:"Čaša vode je na stolu.",rule:"OF pokazuje sadržaj/količinu: a glass of water."},
+{p:"of",en:"The front ___ the building is clean.",sr:"Prednji deo zgrade je čist.",rule:"OF pokazuje deo celine."},
+{p:"of",en:"The color ___ the car is white.",sr:"Boja auta je bela.",rule:"OF pokazuje pripadnost/osobinu."},
+{p:"of",en:"The driver ___ this truck is here.",sr:"Vozač ovog kamiona je ovde.",rule:"OF pokazuje pripadnost/vezu."},
+{p:"of",en:"The price ___ fuel is high.",sr:"Cena goriva je visoka.",rule:"OF pokazuje na šta se cena odnosi."},
+{p:"of",en:"A lot ___ people are waiting.",sr:"Mnogo ljudi čeka.",rule:"A lot of = mnogo."},
+{p:"of",en:"The middle ___ the road is blocked.",sr:"Sredina puta je blokirana.",rule:"OF pokazuje deo celine."},
+{p:"of",en:"The owner ___ the shop is outside.",sr:"Vlasnik prodavnice je napolju.",rule:"OF pokazuje pripadnost."},
+
+/* INTO */
+{p:"into",en:"Turn right ___ the parking lot.",sr:"Skreni desno na parking.",rule:"INTO znači kretanje ka unutra/u neki prostor."},
+{p:"into",en:"Go ___ the building.",sr:"Uđi u zgradu.",rule:"INTO znači ulazak u prostor."},
+{p:"into",en:"Put the documents ___ the folder.",sr:"Stavi dokumenta u folder.",rule:"INTO pokazuje kretanje/stavljanje unutra."},
+{p:"into",en:"He got ___ the car.",sr:"Ušao je u auto.",rule:"Get into = ući u vozilo/prostor."},
+{p:"into",en:"The truck drove ___ the yard.",sr:"Kamion je ušao u dvorište.",rule:"INTO označava ulazak."},
+{p:"into",en:"Click ___ the app.",sr:"Uđi u aplikaciju.",rule:"INTO može označiti ulazak u aplikaciju/sistem."},
+{p:"into",en:"She went ___ the shop.",sr:"Ona je ušla u prodavnicu.",rule:"Go into = ući u."},
+{p:"into",en:"Move the file ___ this folder.",sr:"Premesti fajl u ovaj folder.",rule:"INTO pokazuje premeštanje unutra."},
+{p:"into",en:"Pour water ___ the glass.",sr:"Sipaj vodu u čašu.",rule:"INTO pokazuje sipanje u nešto."},
+{p:"into",en:"Log ___ the system.",sr:"Uloguj se u sistem.",rule:"Log into = ulogovati se u sistem."},
+
+/* OUT OF */
+{p:"out of",en:"He got ___ the car.",sr:"Izašao je iz auta.",rule:"OUT OF znači iz unutrašnjosti ka napolje."},
+{p:"out of",en:"Take the phone ___ your pocket.",sr:"Izvadi telefon iz džepa.",rule:"OUT OF znači izvaditi iz nečega."},
+{p:"out of",en:"The driver is ___ hours.",sr:"Vozač je ostao bez sati.",rule:"Out of može značiti bez/ne ostaje."},
+{p:"out of",en:"Go ___ the building.",sr:"Izađi iz zgrade.",rule:"OUT OF znači izaći iz prostora."},
+{p:"out of",en:"She ran ___ the shop.",sr:"Istrčala je iz prodavnice.",rule:"OUT OF znači kretanje iznutra napolje."},
+{p:"out of",en:"We are ___ fuel.",sr:"Ostali smo bez goriva.",rule:"Out of fuel = bez goriva."},
+{p:"out of",en:"Take the document ___ the folder.",sr:"Izvadi dokument iz foldera.",rule:"OUT OF znači izvaditi iz."},
+{p:"out of",en:"He is ___ town today.",sr:"On je van grada danas.",rule:"Out of town = van grada."},
+{p:"out of",en:"This is ___ control.",sr:"Ovo je van kontrole.",rule:"Out of control = van kontrole."},
+{p:"out of",en:"The truck is ___ service.",sr:"Kamion nije u funkciji.",rule:"Out of service = van upotrebe/nije u funkciji."},
+
+/* UNDER */
+{p:"under",en:"The bag is ___ the table.",sr:"Torba je ispod stola.",rule:"UNDER znači ispod."},
+{p:"under",en:"The cat is ___ the car.",sr:"Mačka je ispod auta.",rule:"UNDER znači ispod nečega."},
+{p:"under",en:"The document is ___ the book.",sr:"Dokument je ispod knjige.",rule:"UNDER znači ispod."},
+{p:"under",en:"The bridge is ___ construction.",sr:"Most je u izgradnji.",rule:"Under construction = u izgradnji."},
+{p:"under",en:"The truck is ___ the bridge.",sr:"Kamion je ispod mosta.",rule:"UNDER znači ispod."},
+{p:"under",en:"He is ___ pressure.",sr:"On je pod pritiskom.",rule:"Under pressure = pod pritiskom."},
+{p:"under",en:"The file is ___ review.",sr:"Fajl je na proveri.",rule:"Under review = na proveri."},
+{p:"under",en:"Children ___ 12 need help.",sr:"Deci ispod 12 treba pomoć.",rule:"UNDER može značiti manje od/ispod broja."},
+{p:"under",en:"The phone is ___ the paper.",sr:"Telefon je ispod papira.",rule:"UNDER znači ispod."},
+{p:"under",en:"This road is ___ repair.",sr:"Ovaj put je u popravci.",rule:"Under repair = u popravci."},
+
+/* OVER */
+{p:"over",en:"The bridge goes ___ the river.",sr:"Most ide preko reke.",rule:"OVER znači preko/iznad."},
+{p:"over",en:"The plane is flying ___ the city.",sr:"Avion leti iznad grada.",rule:"OVER znači iznad."},
+{p:"over",en:"Put the blanket ___ the bed.",sr:"Stavi ćebe preko kreveta.",rule:"OVER znači preko površine."},
+{p:"over",en:"He is ___ 18.",sr:"On ima preko 18 godina.",rule:"OVER može značiti više od/preko broja."},
+{p:"over",en:"The meeting is ___ now.",sr:"Sastanak je sada završen.",rule:"Over može značiti završeno."},
+{p:"over",en:"Walk ___ the bridge.",sr:"Pređi preko mosta.",rule:"OVER znači preko."},
+{p:"over",en:"There is a sign ___ the door.",sr:"Ima znak iznad vrata.",rule:"OVER znači iznad."},
+{p:"over",en:"The price is ___ 100 dollars.",sr:"Cena je preko 100 dolara.",rule:"OVER znači preko/više od."},
+{p:"over",en:"We talked ___ coffee.",sr:"Pričali smo uz kafu.",rule:"Talk over coffee = pričati uz kafu."},
+{p:"over",en:"The lamp is ___ the table.",sr:"Lampa je iznad stola.",rule:"OVER znači iznad."},
+
+/* THROUGH */
+{p:"through",en:"Go ___ the tunnel.",sr:"Idi kroz tunel.",rule:"THROUGH znači kroz prostor."},
+{p:"through",en:"Walk ___ the park.",sr:"Prođi kroz park.",rule:"THROUGH znači kroz."},
+{p:"through",en:"Drive ___ the city center.",sr:"Vozi kroz centar grada.",rule:"THROUGH znači kroz oblast/prostor."},
+{p:"through",en:"I learned it ___ practice.",sr:"Naučio sam to kroz vežbu.",rule:"THROUGH može značiti kroz proces/metod."},
+{p:"through",en:"The road goes ___ the forest.",sr:"Put ide kroz šumu.",rule:"THROUGH znači kroz."},
+{p:"through",en:"We passed ___ the gate.",sr:"Prošli smo kroz kapiju.",rule:"THROUGH znači kroz otvor/prolaz."},
+{p:"through",en:"Send it ___ the app.",sr:"Pošalji to kroz aplikaciju.",rule:"THROUGH znači preko/kroz kanal."},
+{p:"through",en:"He looked ___ the window.",sr:"Pogledao je kroz prozor.",rule:"Look through = gledati kroz."},
+{p:"through",en:"The driver went ___ the checkpoint.",sr:"Vozač je prošao kroz kontrolnu tačku.",rule:"THROUGH znači proći kroz."},
+{p:"through",en:"Go ___ the main entrance.",sr:"Idi kroz glavni ulaz.",rule:"THROUGH znači kroz ulaz/prolaz."},
+
+/* BETWEEN */
+{p:"between",en:"The pharmacy is ___ the bank and the shop.",sr:"Apoteka je između banke i prodavnice.",rule:"BETWEEN znači između dve stvari/osobe."},
+{p:"between",en:"The park is ___ the school and the hospital.",sr:"Park je između škole i bolnice.",rule:"BETWEEN znači između."},
+{p:"between",en:"I work ___ 8 and 5.",sr:"Radim između 8 i 5.",rule:"BETWEEN se koristi za raspon između dve tačke."},
+{p:"between",en:"The hotel is ___ two restaurants.",sr:"Hotel je između dva restorana.",rule:"BETWEEN znači između dve stvari."},
+{p:"between",en:"There is a problem ___ the driver and the company.",sr:"Postoji problem između vozača i kompanije.",rule:"BETWEEN pokazuje odnos između dve strane."},
+{p:"between",en:"The cafe is ___ the bank and the hotel.",sr:"Kafić je između banke i hotela.",rule:"BETWEEN znači između."},
+{p:"between",en:"The meeting is ___ Monday and Wednesday.",sr:"Sastanak je između ponedeljka i srede.",rule:"BETWEEN se koristi za period između dve tačke."},
+{p:"between",en:"The truck is ___ two cars.",sr:"Kamion je između dva auta.",rule:"BETWEEN znači između dve stvari."},
+{p:"between",en:"Keep distance ___ vehicles.",sr:"Drži rastojanje između vozila.",rule:"BETWEEN znači između."},
+{p:"between",en:"The file is shared ___ two users.",sr:"Fajl je podeljen između dva korisnika.",rule:"BETWEEN pokazuje deljenje između dve strane."},
+
+/* BEHIND */
+{p:"behind",en:"The bank is ___ the hotel.",sr:"Banka je iza hotela.",rule:"BEHIND znači iza."},
+{p:"behind",en:"The parking lot is ___ the building.",sr:"Parking je iza zgrade.",rule:"BEHIND znači iza."},
+{p:"behind",en:"The school is ___ the park.",sr:"Škola je iza parka.",rule:"BEHIND znači iza."},
+{p:"behind",en:"The truck is ___ the warehouse.",sr:"Kamion je iza skladišta.",rule:"BEHIND znači iza."},
+{p:"behind",en:"The driver is ___ schedule.",sr:"Vozač kasni po rasporedu.",rule:"Behind schedule = kasniti po rasporedu."},
+{p:"behind",en:"The cafe is ___ the museum.",sr:"Kafić je iza muzeja.",rule:"BEHIND znači iza."},
+{p:"behind",en:"There is a road ___ the hotel.",sr:"Postoji put iza hotela.",rule:"BEHIND znači iza."},
+{p:"behind",en:"The office is ___ the shop.",sr:"Kancelarija je iza prodavnice.",rule:"BEHIND znači iza."},
+{p:"behind",en:"The car is ___ the truck.",sr:"Auto je iza kamiona.",rule:"BEHIND znači iza."},
+{p:"behind",en:"The garage is ___ the house.",sr:"Garaža je iza kuće.",rule:"BEHIND znači iza."},
+
+/* NEXT TO */
+{p:"next to",en:"The cafe is ___ the restaurant.",sr:"Kafić je pored restorana.",rule:"NEXT TO znači odmah pored."},
+{p:"next to",en:"The pharmacy is ___ the hospital.",sr:"Apoteka je pored bolnice.",rule:"NEXT TO znači pored."},
+{p:"next to",en:"The bank is ___ the shop.",sr:"Banka je pored prodavnice.",rule:"NEXT TO znači pored."},
+{p:"next to",en:"The hotel is ___ the park.",sr:"Hotel je pored parka.",rule:"NEXT TO znači pored."},
+{p:"next to",en:"The bus stop is ___ the school.",sr:"Autobuska stanica je pored škole.",rule:"NEXT TO znači pored."},
+{p:"next to",en:"The gas station is ___ the cafe.",sr:"Pumpa je pored kafića.",rule:"NEXT TO znači pored."},
+{p:"next to",en:"The truck is ___ the warehouse.",sr:"Kamion je pored skladišta.",rule:"NEXT TO znači pored."},
+{p:"next to",en:"The office is ___ the bank.",sr:"Kancelarija je pored banke.",rule:"NEXT TO znači pored."},
+{p:"next to",en:"The car is ___ the hotel.",sr:"Auto je pored hotela.",rule:"NEXT TO znači pored."},
+{p:"next to",en:"The entrance is ___ the reception.",sr:"Ulaz je pored recepcije.",rule:"NEXT TO znači pored."},
+
+/* ACROSS FROM */
+{p:"across from",en:"The pharmacy is ___ the bank.",sr:"Apoteka je preko puta banke.",rule:"ACROSS FROM znači preko puta."},
+{p:"across from",en:"The hotel is ___ the park.",sr:"Hotel je preko puta parka.",rule:"ACROSS FROM znači preko puta."},
+{p:"across from",en:"The shop is ___ the bus stop.",sr:"Prodavnica je preko puta stanice.",rule:"ACROSS FROM znači preko puta."},
+{p:"across from",en:"The school is ___ the hospital.",sr:"Škola je preko puta bolnice.",rule:"ACROSS FROM znači preko puta."},
+{p:"across from",en:"The cafe is ___ the restaurant.",sr:"Kafić je preko puta restorana.",rule:"ACROSS FROM znači preko puta."},
+{p:"across from",en:"The gas station is ___ the hotel.",sr:"Pumpa je preko puta hotela.",rule:"ACROSS FROM znači preko puta."},
+{p:"across from",en:"The office is ___ the parking lot.",sr:"Kancelarija je preko puta parkinga.",rule:"ACROSS FROM znači preko puta."},
+{p:"across from",en:"The museum is ___ the bank.",sr:"Muzej je preko puta banke.",rule:"ACROSS FROM znači preko puta."},
+{p:"across from",en:"The bus stop is ___ the school.",sr:"Autobuska stanica je preko puta škole.",rule:"ACROSS FROM znači preko puta."},
+{p:"across from",en:"The pharmacy is ___ the restaurant.",sr:"Apoteka je preko puta restorana.",rule:"ACROSS FROM znači preko puta."},
+
+/* AFTER */
+{p:"after",en:"Turn right ___ the gas station.",sr:"Skreni desno posle pumpe.",rule:"AFTER znači posle."},
+{p:"after",en:"Call me ___ work.",sr:"Pozovi me posle posla.",rule:"AFTER znači posle."},
+{p:"after",en:"We eat ___ the meeting.",sr:"Jedemo posle sastanka.",rule:"AFTER znači posle."},
+{p:"after",en:"Go straight ___ the roundabout.",sr:"Idi pravo posle kružnog toka.",rule:"AFTER znači posle."},
+{p:"after",en:"The driver starts ___ 7 AM.",sr:"Vozač počinje posle 7 ujutru.",rule:"AFTER znači posle određenog vremena."},
+{p:"after",en:"Turn left ___ the school.",sr:"Skreni levo posle škole.",rule:"AFTER znači posle."},
+{p:"after",en:"I will check it ___ lunch.",sr:"Proveriću to posle ručka.",rule:"AFTER znači posle."},
+{p:"after",en:"The shop is ___ the bank.",sr:"Prodavnica je posle banke.",rule:"AFTER znači posle u redosledu."},
+{p:"after",en:"Come back ___ two hours.",sr:"Vrati se posle dva sata.",rule:"AFTER znači posle određenog perioda."},
+{p:"after",en:"He went home ___ work.",sr:"Otišao je kući posle posla.",rule:"AFTER znači posle."},
+
+/* BEFORE */
+{p:"before",en:"Turn left ___ the school.",sr:"Skreni levo pre škole.",rule:"BEFORE znači pre."},
+{p:"before",en:"Call me ___ the meeting.",sr:"Pozovi me pre sastanka.",rule:"BEFORE znači pre."},
+{p:"before",en:"Stop ___ the intersection.",sr:"Stani pre raskrsnice.",rule:"BEFORE znači pre neke tačke."},
+{p:"before",en:"The bank is ___ the traffic light.",sr:"Banka je pre semafora.",rule:"BEFORE znači pre."},
+{p:"before",en:"I wake up ___ 7 AM.",sr:"Budim se pre 7 ujutru.",rule:"BEFORE znači pre određenog vremena."},
+{p:"before",en:"Check the report ___ sending it.",sr:"Proveri izveštaj pre slanja.",rule:"BEFORE + glagol-ing znači pre nego što uradiš nešto."},
+{p:"before",en:"Turn right ___ the bridge.",sr:"Skreni desno pre mosta.",rule:"BEFORE znači pre."},
+{p:"before",en:"We arrived ___ noon.",sr:"Stigli smo pre podneva.",rule:"BEFORE znači pre određenog vremena."},
+{p:"before",en:"Read this ___ you start.",sr:"Pročitaj ovo pre nego što počneš.",rule:"BEFORE znači pre nego što."},
+{p:"before",en:"The hotel is ___ the park.",sr:"Hotel je pre parka.",rule:"BEFORE znači pre u redosledu."}
+];
+
+const setSize = 20;
+let questions = shuffleArray([...questionBank]);
+let setIndex = Number(localStorage.getItem("prep240SetIndexV2")) || 0;
+let currentSet = [];
+let currentIndex = 0;
+let answered = false;
+let correctCount = Number(localStorage.getItem("prep240CorrectV2")) || 0;
+let wrongCount = Number(localStorage.getItem("prep240WrongV2")) || 0;
+
+function shuffleArray(arr){
+  return arr.sort(() => Math.random() - 0.5);
+}
+
+function normalize(text){
+  return text.toLowerCase().trim()
+    .replace(/[.!?,]/g,"")
+    .replace(/\s+/g," ");
+}
+
+function loadSet(){
+  const start = setIndex * setSize;
+  currentSet = questions.slice(start,start+setSize);
+
+  if(currentSet.length === 0){
+    setIndex = 0;
+    localStorage.setItem("prep240SetIndexV2",0);
+    currentSet = questions.slice(0,setSize);
+  }
+
+  currentIndex = 0;
+  showItem();
+}
+
+function renderChoices(correct){
+  let wrongOptions = allPrepositions.filter(p => p !== correct);
+  let options = shuffleArray([
+    correct,
+    ...shuffleArray(wrongOptions).slice(0,2)
+  ]);
+
+  document.getElementById("choices").innerHTML = options.map(opt =>
+    `<button onclick="quickAnswer('${opt}')">${opt}</button>`
+  ).join("");
+}
+
+function showItem(){
+  answered = false;
+  const q = currentSet[currentIndex];
+
+  document.getElementById("counter").innerText =
+    `Set ${setIndex+1} | Pitanje ${currentIndex+1}/${currentSet.length} | Ukupno primera: ${questions.length}`;
+
+  document.getElementById("phaseText").innerText = "Upiši predlog koji nedostaje";
+  document.getElementById("serbian").innerText = q.sr;
+  document.getElementById("question").innerHTML =
+    q.en.replace("___", `<span class="blank">___</span>`);
+
+  document.getElementById("answer").value = "";
+  document.getElementById("result").innerHTML = "";
+  document.getElementById("nextBtn").style.display = "none";
+  document.querySelector(".check").style.display = "block";
+  document.getElementById("answer").style.display = "block";
+
+  renderChoices(q.p);
+  updateStats();
+  document.getElementById("answer").focus();
+}
+
+function quickAnswer(value){
+  if(answered) return;
+  document.getElementById("answer").value = value;
+  checkAnswer();
+}
+
+function checkAnswer(){
+  if(answered) return;
+  answered = true;
+
+  const q = currentSet[currentIndex];
+  const user = normalize(document.getElementById("answer").value);
+  const correct = normalize(q.p);
+  const fullSentence = q.en.replace("___", q.p);
+
+  if(user === correct){
+    correctCount++;
+    document.getElementById("result").innerHTML =
+      `<div class="correct">Tačno ✅</div>
+       <div class="answer">${fullSentence}</div>`;
+  }else{
+    wrongCount++;
+    document.getElementById("result").innerHTML =
+      `<div class="wrong">Netačno ❌</div>
+       <div>Tačno je:</div>
+       <div class="answer">${q.p}</div>
+       <div class="answer">${fullSentence}</div>
+       <div class="explain"><b>Objašnjenje:</b><br>${q.rule}</div>`;
+  }
+
+  localStorage.setItem("prep240CorrectV2",correctCount);
+  localStorage.setItem("prep240WrongV2",wrongCount);
+
+  updateStats();
+  document.querySelector(".check").style.display = "none";
+  document.getElementById("nextBtn").style.display = "block";
+}
+
+function nextItem(){
+  currentIndex++;
+
+  if(currentIndex >= currentSet.length){
+    finishSet();
+    return;
+  }
+
+  showItem();
+}
+
+function finishSet(){
+  document.getElementById("phaseText").innerText = "";
+  document.getElementById("serbian").innerText = "";
+  document.getElementById("question").innerText = "Set završen";
+  document.getElementById("answer").style.display = "none";
+  document.querySelector(".check").style.display = "none";
+  document.getElementById("nextBtn").style.display = "none";
+  document.getElementById("choices").innerHTML = "";
+
+  document.getElementById("result").innerHTML =
+    `<button onclick="loadSet()" style="background:#facc15;color:#111827">Ponovi set</button>
+     <button onclick="nextSet()" style="background:#22c55e;color:#052e16">Sledeći set</button>`;
+}
+
+function nextSet(){
+  setIndex++;
+  localStorage.setItem("prep240SetIndexV2",setIndex);
+  loadSet();
+}
+
+function prevSet(){
+  if(setIndex > 0) setIndex--;
+  localStorage.setItem("prep240SetIndexV2",setIndex);
+  loadSet();
+}
+
+function updateStats(){
+  const total = correctCount + wrongCount;
+  const percent = total ? Math.round((correctCount / total) * 100) : 0;
+
+  document.getElementById("correctBox").innerText = correctCount;
+  document.getElementById("wrongBox").innerText = wrongCount;
+  document.getElementById("percentBox").innerText = percent + "%";
+}
+
+function resetStats(){
+  correctCount = 0;
+  wrongCount = 0;
+  localStorage.setItem("prep240CorrectV2",0);
+  localStorage.setItem("prep240WrongV2",0);
+  updateStats();
+  document.getElementById("result").innerHTML =
+    `<div class="answer">Score je resetovan.</div>`;
+}
+
+document.getElementById("answer").addEventListener("keydown",function(e){
+  if(e.key === "Enter"){
+    if(!answered) checkAnswer();
+    else nextItem();
+  }
+});
+
+loadSet();
+</script>
+</body>
+</html>
