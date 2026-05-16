@@ -91,9 +91,9 @@ company | ˈkʌmpəni | kompanija"></textarea>
 
 </div>
 </div>
-
+<script src="words.js"></script>
 <script>
-let words = JSON.parse(localStorage.getItem("myWordsTrainerReading")) || [];
+let words = JSON.parse(localStorage.getItem("myWordsTrainerReading")) || window.WORDS_DATA || [];
 let practiceWords = [];
 let index = 0;
 let correct = 0;
