@@ -9,28 +9,30 @@
 *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
 body{background:#0f172a;color:white;min-height:100vh}
 .app{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:18px}
-.card{width:100%;max-width:620px;background:#1e293b;border-radius:22px;padding:24px;text-align:center}
+.card{width:100%;max-width:650px;background:#1e293b;border-radius:22px;padding:24px;text-align:center}
 .title{font-size:24px;color:#38bdf8;font-weight:bold;margin-bottom:12px}
 .tabs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
 .tabs button{background:#334155;color:white}
 .tabs button.active{background:#38bdf8;color:#020617}
 input,textarea{width:100%;padding:15px;border:none;border-radius:14px;font-size:18px;text-align:center;outline:none;margin-top:10px}
-textarea{text-align:left;min-height:120px;resize:vertical}
+textarea{text-align:left;min-height:130px;resize:vertical}
 button{width:100%;padding:14px;border:none;border-radius:14px;margin-top:10px;font-size:17px;font-weight:bold;cursor:pointer}
 .green{background:#22c55e;color:#052e16}
 .blue{background:#38bdf8;color:#020617}
 .red{background:#ef4444;color:white}
 .gray{background:#64748b;color:white}
-.word{font-size:34px;font-weight:bold;margin:22px 0;line-height:1.35}
-.counter,.hint{color:#94a3b8;margin-top:8px}
+.word{font-size:36px;font-weight:bold;margin:22px 0 10px;line-height:1.35}
+.reading{font-size:22px;color:#94a3b8;margin-bottom:18px}
+.counter,.hint{color:#94a3b8;margin-top:8px;line-height:1.4}
 .result{margin-top:16px;min-height:70px}
 .correct{color:#22c55e;font-weight:bold}
 .wrong{color:#f87171;font-weight:bold}
 .answer{color:#facc15;font-size:22px;margin-top:8px}
 .score{margin-top:14px;color:#cbd5e1}
-.list{background:#0f172a;border:1px solid #334155;border-radius:14px;padding:12px;margin-top:14px;text-align:left;max-height:220px;overflow:auto}
-.item{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid #334155;padding:8px 0;color:#cbd5e1}
+.list{background:#0f172a;border:1px solid #334155;border-radius:14px;padding:12px;margin-top:14px;text-align:left;max-height:260px;overflow:auto}
+.item{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid #334155;padding:8px 0;color:#cbd5e1;align-items:center}
 .item:last-child{border-bottom:none}
+.item small{color:#94a3b8}
 .smallBtn{width:auto;padding:7px 10px;margin:0;background:#ef4444;color:white;font-size:13px}
 </style>
 </head>
@@ -48,16 +50,20 @@ button{width:100%;padding:14px;border:none;border-radius:14px;margin-top:10px;fo
 </div>
 
 <div id="addScreen">
-  <div class="hint">Unesi jednu reč ili više reči odjednom.</div>
+  <div class="hint">
+    Unesi reč, izgovor i prevod. Izgovor se samo prikazuje, ne mora da se kuca kao odgovor.
+  </div>
 
-  <input id="enInput" placeholder="English word, npr. driver">
-  <input id="srInput" placeholder="Srpski prevod, npr. vozač">
+  <input id="enInput" placeholder="English word, npr. garden">
+  <input id="readInput" placeholder="Kako se čita, npr. ˈɡärdən">
+  <input id="srInput" placeholder="Srpski prevod, npr. bašta">
+
   <button class="green" onclick="addWord()">Sačuvaj reč</button>
 
   <textarea id="bulkInput" placeholder="Može i više reči odjednom:
-driver = vozač
-company = kompanija
-road = put"></textarea>
+garden | ˈɡärdən | bašta
+driver | ˈdraɪvər | vozač
+company | ˈkʌmpəni | kompanija"></textarea>
 
   <button class="blue" onclick="addBulk()">Ubaci listu reči</button>
   <button class="red" onclick="deleteAll()">Obriši sve reči</button>
@@ -70,6 +76,7 @@ road = put"></textarea>
   <div class="hint" id="directionText"></div>
 
   <div class="word" id="word">Nema reči</div>
+  <div class="reading" id="reading"></div>
 
   <input id="answer" placeholder="upiši odgovor">
 
@@ -86,7 +93,7 @@ road = put"></textarea>
 </div>
 
 <script>
-let words = JSON.parse(localStorage.getItem("myWordsTrainer")) || [];
+let words = JSON.parse(localStorage.getItem("myWordsTrainerReading")) || [];
 let practiceWords = [];
 let index = 0;
 let correct = 0;
@@ -95,7 +102,7 @@ let answered = false;
 let direction = "en-sr";
 
 function saveWords(){
-  localStorage.setItem("myWordsTrainer", JSON.stringify(words));
+  localStorage.setItem("myWordsTrainerReading", JSON.stringify(words));
 }
 
 function normalize(text){
@@ -124,37 +131,53 @@ function showPractice(){
 
 function addWord(){
   const en = document.getElementById("enInput").value.trim();
+  const read = document.getElementById("readInput").value.trim();
   const sr = document.getElementById("srInput").value.trim();
 
   if(!en || !sr){
-    alert("Upiši i englesku reč i srpski prevod.");
+    alert("Upiši englesku reč i srpski prevod.");
     return;
   }
 
-  words.push({en,sr});
+  words.push({en, read, sr});
   saveWords();
 
   document.getElementById("enInput").value="";
+  document.getElementById("readInput").value="";
   document.getElementById("srInput").value="";
   renderList();
 }
 
 function addBulk(){
   const text = document.getElementById("bulkInput").value.trim();
+
   if(!text){
     alert("Unesi listu reči.");
     return;
   }
 
-  const lines = text.split("\\n");
+  const lines = text.split("\n");
 
   lines.forEach(line=>{
-    let parts = line.includes("=") ? line.split("=") : line.split("-");
-    if(parts.length >= 2){
+    let parts = [];
+
+    if(line.includes("|")){
+      parts = line.split("|");
+    }else if(line.includes("=")){
+      const temp = line.split("=");
+      parts = [temp[0], "", temp.slice(1).join("=")];
+    }else if(line.includes("-")){
+      const temp = line.split("-");
+      parts = [temp[0], "", temp.slice(1).join("-")];
+    }
+
+    if(parts.length >= 3){
       const en = parts[0].trim();
-      const sr = parts.slice(1).join(" ").trim();
+      const read = parts[1].trim();
+      const sr = parts.slice(2).join(" ").trim();
+
       if(en && sr){
-        words.push({en,sr});
+        words.push({en, read, sr});
       }
     }
   });
@@ -174,7 +197,11 @@ function renderList(){
 
   list.innerHTML = words.map((w,i)=>`
     <div class="item">
-      <span><b>${w.en}</b> — ${w.sr}</span>
+      <span>
+        <b>${w.en}</b>
+        ${w.read ? `<small> ${w.read}</small>` : ""}
+        — ${w.sr}
+      </span>
       <button class="smallBtn" onclick="deleteWord(${i})">X</button>
     </div>
   `).join("");
@@ -201,9 +228,11 @@ function shuffle(arr){
 function restartPractice(){
   if(words.length === 0){
     document.getElementById("word").innerText="Nema unetih reči";
+    document.getElementById("reading").innerText="";
     document.getElementById("counter").innerText="";
     document.getElementById("directionText").innerText="Prvo idi na Unos reči.";
     document.getElementById("answer").style.display="none";
+    document.getElementById("score").innerText="";
     return;
   }
 
@@ -231,10 +260,12 @@ function showWord(){
   if(direction === "en-sr"){
     document.getElementById("directionText").innerText="Prevedi na srpski";
     document.getElementById("word").innerText=item.en;
+    document.getElementById("reading").innerText=item.read || "";
     document.getElementById("answer").placeholder="upiši srpski prevod";
   }else{
     document.getElementById("directionText").innerText="Prevedi na engleski";
     document.getElementById("word").innerText=item.sr;
+    document.getElementById("reading").innerText="";
     document.getElementById("answer").placeholder="upiši englesku reč";
   }
 
@@ -249,6 +280,7 @@ function checkAnswer(){
 
   const item = practiceWords[index];
   const user = normalize(document.getElementById("answer").value);
+
   const correctAnswer = direction === "en-sr" ? item.sr : item.en;
 
   if(user === normalize(correctAnswer)){
@@ -260,7 +292,8 @@ function checkAnswer(){
     document.getElementById("result").innerHTML =
       `<div class="wrong">Netačno ❌</div>
        <div>Tačan odgovor je:</div>
-       <div class="answer">${correctAnswer}</div>`;
+       <div class="answer">${correctAnswer}</div>
+       ${direction === "sr-en" && item.read ? `<div class="reading">${item.read}</div>` : ""}`;
   }
 
   document.getElementById("nextBtn").style.display="block";
@@ -275,6 +308,7 @@ function nextWord(){
     const percent = total ? Math.round((correct / total) * 100) : 0;
 
     document.getElementById("word").innerText="Vežba završena";
+    document.getElementById("reading").innerText="";
     document.getElementById("directionText").innerText="";
     document.getElementById("counter").innerText="";
     document.getElementById("answer").style.display="none";
@@ -293,6 +327,7 @@ function nextWord(){
 function updateScore(){
   const total = correct + wrong;
   const percent = total ? Math.round((correct / total) * 100) : 0;
+
   document.getElementById("score").innerText =
     `Tačno: ${correct} | Netačno: ${wrong} | Tačnost: ${percent}%`;
 }
