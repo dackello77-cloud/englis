@@ -154,11 +154,15 @@ async function loadWords(){
 }
 
 async function saveToSheet(item){
+  const formData = new FormData();
+
+  formData.append("en", item.en);
+  formData.append("read", item.read || "");
+  formData.append("sr", item.sr);
+
   await fetch(API_URL, {
-    method:"POST",
-    mode:"no-cors",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify(item)
+    method: "POST",
+    body: formData
   });
 }
 
