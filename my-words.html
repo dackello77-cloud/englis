@@ -15,7 +15,7 @@ body{background:#0f172a;color:white;min-height:100vh}
 .tabs button{background:#334155;color:white}
 .tabs button.active{background:#38bdf8;color:#020617}
 input,textarea{width:100%;padding:15px;border:none;border-radius:14px;font-size:18px;text-align:center;outline:none;margin-top:10px}
-textarea{text-align:left;min-height:130px;resize:vertical}
+textarea{text-align:left;min-height:120px;resize:vertical}
 button{width:100%;padding:14px;border:none;border-radius:14px;margin-top:10px;font-size:17px;font-weight:bold;cursor:pointer}
 .green{background:#22c55e;color:#052e16}
 .blue{background:#38bdf8;color:#020617}
@@ -33,7 +33,7 @@ button{width:100%;padding:14px;border:none;border-radius:14px;margin-top:10px;fo
 .item{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid #334155;padding:8px 0;color:#cbd5e1;align-items:center}
 .item:last-child{border-bottom:none}
 .item small{color:#94a3b8}
-.smallBtn{width:auto;padding:7px 10px;margin:0;background:#ef4444;color:white;font-size:13px}
+.status{margin-top:10px;color:#facc15;font-size:14px}
 </style>
 </head>
 
@@ -51,23 +51,24 @@ button{width:100%;padding:14px;border:none;border-radius:14px;margin-top:10px;fo
 
 <div id="addScreen">
   <div class="hint">
-    Unesi reč, izgovor i prevod. Izgovor se samo prikazuje, ne mora da se kuca kao odgovor.
+    Reči se čuvaju u Google Sheet-u i rade na telefonu i računaru.
   </div>
 
   <input id="enInput" placeholder="English word, npr. garden">
   <input id="readInput" placeholder="Kako se čita, npr. ˈɡärdən">
   <input id="srInput" placeholder="Srpski prevod, npr. bašta">
 
-  <button class="green" onclick="addWord()">Sačuvaj reč</button>
+  <button class="green" onclick="addWord()">Sačuvaj u Google Sheet</button>
+  <button class="blue" onclick="loadWords()">🔄 Učitaj reči iz Google Sheet-a</button>
 
   <textarea id="bulkInput" placeholder="Može i više reči odjednom:
 garden | ˈɡärdən | bašta
 driver | ˈdraɪvər | vozač
 company | ˈkʌmpəni | kompanija"></textarea>
 
-  <button class="blue" onclick="addBulk()">Ubaci listu reči</button>
-  <button class="red" onclick="deleteAll()">Obriši sve reči</button>
+  <button class="blue" onclick="addBulk()">Ubaci listu u Google Sheet</button>
 
+  <div class="status" id="status"></div>
   <div class="list" id="wordList"></div>
 </div>
 
@@ -87,13 +88,16 @@ company | ˈkʌmpəni | kompanija"></textarea>
   <div class="score" id="score"></div>
 
   <button class="gray" onclick="restartPractice()">Promešaj ponovo</button>
+  <button class="blue" onclick="loadWords()">🔄 Refresh words</button>
 </div>
 
 </div>
 </div>
-<script src="words.js"></script>
+
 <script>
-let words = JSON.parse(localStorage.getItem("myWordsTrainerReading")) || window.WORDS_DATA || [];
+const API_URL = "https://script.google.com/macros/s/AKfycbwBcQemHOmXVcITCEJXl-UsTcFMqjzNk2F2DZVP_w6Cjo340SIxcewOyLoHcIV0dAFe3w/exec";
+
+let words = [];
 let practiceWords = [];
 let index = 0;
 let correct = 0;
@@ -101,8 +105,8 @@ let wrong = 0;
 let answered = false;
 let direction = "en-sr";
 
-function saveWords(){
-  localStorage.setItem("myWordsTrainerReading", JSON.stringify(words));
+function setStatus(text){
+  document.getElementById("status").innerText = text;
 }
 
 function normalize(text){
@@ -129,7 +133,36 @@ function showPractice(){
   restartPractice();
 }
 
-function addWord(){
+async function loadWords(){
+  try{
+    setStatus("Učitavam reči...");
+    const res = await fetch(API_URL);
+    words = await res.json();
+    localStorage.setItem("cachedWords", JSON.stringify(words));
+    renderList();
+    setStatus("Reči su učitane. Ukupno: " + words.length);
+  }catch(e){
+    const cached = localStorage.getItem("cachedWords");
+    if(cached){
+      words = JSON.parse(cached);
+      renderList();
+      setStatus("Google Sheet nije dostupan. Učitane su lokalno sačuvane reči.");
+    }else{
+      setStatus("Greška: ne mogu da učitam reči.");
+    }
+  }
+}
+
+async function saveToSheet(item){
+  await fetch(API_URL, {
+    method:"POST",
+    mode:"no-cors",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(item)
+  });
+}
+
+async function addWord(){
   const en = document.getElementById("enInput").value.trim();
   const read = document.getElementById("readInput").value.trim();
   const sr = document.getElementById("srInput").value.trim();
@@ -139,16 +172,21 @@ function addWord(){
     return;
   }
 
-  words.push({en, read, sr});
-  saveWords();
+  const item = {en, read, sr};
+
+  words.push(item);
+  renderList();
 
   document.getElementById("enInput").value="";
   document.getElementById("readInput").value="";
   document.getElementById("srInput").value="";
-  renderList();
+
+  setStatus("Čuvam u Google Sheet...");
+  await saveToSheet(item);
+  setStatus("Reč je sačuvana.");
 }
 
-function addBulk(){
+async function addBulk(){
   const text = document.getElementById("bulkInput").value.trim();
 
   if(!text){
@@ -157,8 +195,11 @@ function addBulk(){
   }
 
   const lines = text.split("\n");
+  let count = 0;
 
-  lines.forEach(line=>{
+  setStatus("Čuvam listu...");
+
+  for(const line of lines){
     let parts = [];
 
     if(line.includes("|")){
@@ -177,48 +218,36 @@ function addBulk(){
       const sr = parts.slice(2).join(" ").trim();
 
       if(en && sr){
-        words.push({en, read, sr});
+        const item = {en, read, sr};
+        words.push(item);
+        await saveToSheet(item);
+        count++;
       }
     }
-  });
+  }
 
-  saveWords();
   document.getElementById("bulkInput").value="";
   renderList();
+  setStatus("Sačuvano reči: " + count);
 }
 
 function renderList(){
   const list = document.getElementById("wordList");
 
   if(words.length === 0){
-    list.innerHTML = "<div class='hint'>Još nema unetih reči.</div>";
+    list.innerHTML = "<div class='hint'>Još nema učitanih reči.</div>";
     return;
   }
 
-  list.innerHTML = words.map((w,i)=>`
+  list.innerHTML = words.map(w=>`
     <div class="item">
       <span>
         <b>${w.en}</b>
         ${w.read ? `<small> ${w.read}</small>` : ""}
         — ${w.sr}
       </span>
-      <button class="smallBtn" onclick="deleteWord(${i})">X</button>
     </div>
   `).join("");
-}
-
-function deleteWord(i){
-  words.splice(i,1);
-  saveWords();
-  renderList();
-}
-
-function deleteAll(){
-  if(confirm("Da li sigurno želiš da obrišeš sve reči?")){
-    words = [];
-    saveWords();
-    renderList();
-  }
 }
 
 function shuffle(arr){
@@ -227,10 +256,10 @@ function shuffle(arr){
 
 function restartPractice(){
   if(words.length === 0){
-    document.getElementById("word").innerText="Nema unetih reči";
+    document.getElementById("word").innerText="Nema reči";
     document.getElementById("reading").innerText="";
     document.getElementById("counter").innerText="";
-    document.getElementById("directionText").innerText="Prvo idi na Unos reči.";
+    document.getElementById("directionText").innerText="Prvo učitaj ili dodaj reči.";
     document.getElementById("answer").style.display="none";
     document.getElementById("score").innerText="";
     return;
@@ -280,7 +309,6 @@ function checkAnswer(){
 
   const item = practiceWords[index];
   const user = normalize(document.getElementById("answer").value);
-
   const correctAnswer = direction === "en-sr" ? item.sr : item.en;
 
   if(user === normalize(correctAnswer)){
@@ -342,7 +370,7 @@ document.getElementById("answer").addEventListener("keydown",function(e){
   }
 });
 
-renderList();
+loadWords();
 </script>
 
 </body>
